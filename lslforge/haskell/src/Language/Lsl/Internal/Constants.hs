@@ -119,7 +119,8 @@ cClickActionOpen = 4;llcClickActionOpen :: RealFloat a => LSLValue a; llcClickAc
 cClickActionPlay = 5;llcClickActionPlay :: RealFloat a => LSLValue a; llcClickActionPlay = IVal cClickActionPlay
 cClickActionOpenMedia = 6;llcClickActionOpenMedia :: RealFloat a => LSLValue a; llcClickActionOpenMedia = IVal cClickActionOpenMedia
 cClickActionZoom = 7;llcClickActionZoom :: RealFloat a => LSLValue a; llcClickActionZoom = IVal cClickActionZoom
-cClickActions = [cClickActionTouch,cClickActionSit,cClickActionBuy,cClickActionPay,cClickActionOpen,cClickActionPlay,cClickActionOpenMedia,cClickActionZoom]
+cClickActionDisabled = 8;llcClickActionDisabled :: RealFloat a => LSLValue a; llcClickActionDisabled = IVal cClickActionDisabled
+cClickActions = [cClickActionTouch,cClickActionSit,cClickActionBuy,cClickActionPay,cClickActionOpen,cClickActionPlay,cClickActionOpenMedia,cClickActionZoom,cClickActionDisabled]
 
 cDataBorn = 3;llcDataBorn :: RealFloat a => LSLValue a; llcDataBorn = IVal cDataBorn
 cDataName = 2;llcDataName :: RealFloat a => LSLValue a; llcDataName = IVal cDataName
@@ -297,6 +298,7 @@ allConstants = [
     Constant "CLICK_ACTION_SIT" llcClickActionSit,
     Constant "CLICK_ACTION_TOUCH" llcClickActionTouch,
     Constant "CLICK_ACTION_ZOOM" llcClickActionZoom,
+    Constant "CLICK_ACTION_DISABLED" llcClickActionDisabled, 
     Constant "CONTENT_TYPE_ATOM" (IVal 0x04),
     Constant "CONTENT_TYPE_FORM" (IVal 0x07),
     Constant "CONTENT_TYPE_HTML" (IVal 0x01),
@@ -355,9 +357,11 @@ allConstants = [
     Constant "GCNP_STATIC" (IVal 1),
     Constant "GRAVITY_MULTIPLIER" (IVal 8),
     Constant "HORIZONTAL" (IVal 1),
+    Constant "HTTP_ACCEPT" (IVal 8),
     Constant "HTTP_BODY_MAXLENGTH" llcHTTPBodyMaxlength,
     Constant "HTTP_BODY_TRUNCATED" llcHTTPBodyTruncated,
     Constant "HTTP_CUSTOM_HEADER" (IVal 5),
+    Constant "HTTP_EXTENDED_ERROR" (IVal 9),
     Constant "HTTP_METHOD" llcHTTPMethod,
     Constant "HTTP_MIMETYPE" llcHTTPMimetype,
     Constant "HTTP_PRAGMA_NO_CACHE" (IVal 6),

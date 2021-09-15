@@ -4,16 +4,28 @@ An LSL Script Editor/compiler for Second Life's Scripting Language.
 
 <img src="doc/logo100x100.jpg" align="right" width="100px" height="100px" margin="20px" padding="20px"/>
 
-LSLForge is a fork of the popular LSLPlus editing evironment, to provide Linden Scripting Language (LSL) support in Eclipse.
+LSLForge is a fork of the popular LSLPlus editing environment, to provide Linden Scripting Language (LSL) support in Eclipse.
 
-## Fork's Purpose
+## Forks Purposes
 
-`raysilent`'s fork is to maintain latest LSL definitions for functions and constants, fix bugs, as well as keep Eclipse Plugin Update Site up-to-date. After the tests are finished, the repo is merged into `elnewfie`'s original one.
+* [`raysilent`](https://github.com/raysilent/lslforge): This is a fork where the most activity is happening, which is maintaining the latest LSL definitions for functions and constants of `LSL` according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html), also bug fixes, and keeping the Eclipse Plugin Update Site up-to-date.
+* [`elnewfie`](https://github.com/elnewfie/lslforge): After all the tests are accomplished, the repo is merged into the [`elnewfie`](https://github.com/elnewfie/lslforge)'s original repo, to avoid confusion.
 
 ### News (newest first)
 
-* **0.1.9.7** (work in progress)
-    * **Windows** & **Mac** executables only at this moment. Linux will have an older version of exectuable that is not supporting any new features or bug fixes.
+* **0.1.9.8**
+    - [x] http://wiki.secondlife.com/wiki/LlOrd
+    - [x] http://wiki.secondlife.com/wiki/LlChar
+    - [x] http://wiki.secondlife.com/wiki/LlHash
+    - [x] `llGetEnv()` constants: `"whisper_range"`, `"chat_range"` & `"shout_range"` (in comments)
+    - [x] http://wiki.secondlife.com/wiki/LlGetInventoryAcquireTime
+    - [x] http://wiki.secondlife.com/wiki/LlOpenFloater
+        - [ ] (Postponed) Return error codes seem to be missing in the viewer.
+    - [x] http://wiki.secondlife.com/wiki/CLICK_ACTION_DISABLED
+    - [ ] (Postponed) `TARGETED_EMAIL_ROOT_CREATOR` seems to be eliminated, however still exists in the viewer, so we keep it for now.
+    - [x] Mark `llXorBase64StringsCorrect` as deprecated in comments.
+
+* **0.1.9.7**
     * Fixed bugs (Thanks [@PellSmit](https://github.com/PellSmit)))
     * New functions and constants:
         * `llGetDayLength`
@@ -29,7 +41,7 @@ LSLForge is a fork of the popular LSLPlus editing evironment, to provide Linden 
         * `llGetSunRotation`
         * `llReplaceAgentEnvironment`
         * `llSetAgentEnvironment`
-        * `llTargetedEmail` and its consants:
+        * `llTargetedEmail` and its constants:
             * `TARGETED_EMAIL_ROOT_CREATOR`
             * `TARGETED_EMAIL_OBJECT_OWNER`
         * `ENV_NOT_EXPERIENCE`
@@ -60,29 +72,29 @@ LSLForge is a fork of the popular LSLPlus editing evironment, to provide Linden 
             * `IMG_USE_BAKED_AUX3`
 * 2018-09-16 LSLForge **0.1.9.6** (**Windows**, **Linux** (Thanks [@Trapez](https://github.com/Trapez)), **Mac** (Thanks [@PellSmit](https://github.com/PellSmit)))
     * Animesh Functions and Constants:
-        * llStartObjectAnimation(string anim);
-        * llStopObjectAnimation(string anim);
-        * list llGetObjectAnimationNames();
-        * integer OBJECT_CREATION_TIME = 36;
-        * integer OBJECT_SELECT_COUNT = 37;
-        * integer OBJECT_SIT_COUNT = 38;
+        * `llStartObjectAnimation(string anim)`
+        * `llStopObjectAnimation(string anim)`
+        * `list llGetObjectAnimationNames()`
+        * `integer OBJECT_CREATION_TIME = 36`
+        * `integer OBJECT_SELECT_COUNT = 37`
+        * `integer OBJECT_SIT_COUNT = 38`
 * 2018-09-14 LSLForge **0.1.9.5** (**Windows**, **Linux** (Thanks [@Trapez](https://github.com/Trapez)), **Mac** (Thanks [@PellSmit](https://github.com/PellSmit)))
     * Experimental hot deploy of the newly selected native executable
-    * "Generated" comment at the end of *.lsl file (easier to check what was copy-pasted) (**Windows** only)
+    * "Generated" comment at the end of `*.lsl` file (easier to check what was copy-pasted) (**Windows** only)
 * 2018-09-10 LSLForge **0.1.9.4** (**Windows**, **Mac** Only)
     * Fixed ``Tuple*.java`` disappearance (Thanks [@PellSmit](https://github.com/PellSmit))
     * Upgraded Haskell (Thanks [@simon-nicholls](https://github.com/simon-nicholls))
-    * HTTP_USER_AGENT
-    * OBJECT_RENDER_WEIGHT
-    * key llName2Key(string name)
-    * key llRequestUserKey(string name)
+    * `HTTP_USER_AGENT`
+    * `OBJECT_RENDER_WEIGHT`
+    * `key llName2Key(string name)`
+    * `key llRequestUserKey(string name)`
 * 2017-02-10 LSLForge **0.1.9.3** (**Windows**, **Linux** (Thanks [@Trapez](https://github.com/Trapez)), **Mac** (Thanks [@PellSmit](https://github.com/PellSmit)))
-    * ATTACH_FACE_TONGUE misspelled
+    * `ATTACH_FACE_TONGUE` misspelled
 * 2017-01-07 LSLForge **0.1.9.2** (**Windows**, **Linux** (Thanks [@Trapez](https://github.com/Trapez)), **Mac** (Thanks [@PellSmit](https://github.com/PellSmit)))
-    * OBJECT_ATTACHED_SLOTS_AVAILABLE
-    * llGetEnv("region_object_bonus") (in comments)
+    * `OBJECT_ATTACHED_SLOTS_AVAILABLE`
+    * `llGetEnv("region_object_bonus")` (in comments)
 * 2016-11-13 LSLForge **0.1.9.1** (**Windows**, **Linux** (Thanks [@Trapez](https://github.com/Trapez)), **Mac** (Thanks [@PellSmit](https://github.com/PellSmit)))
-    * OBJECT_GROUP_TAG, OBJECT_TEMP_ATTACHED added
+    * `OBJECT_GROUP_TAG`, `OBJECT_TEMP_ATTACHED` added
     * Bug fixes (Thanks [@PellSmit](https://github.com/PellSmit)):
         * [#35](https://github.com/raysilent/lslforge/issues/35) (negative out of range index)
         * [#6](https://github.com/raysilent/lslforge/issues/6) (backslash in string)
@@ -90,9 +102,9 @@ LSLForge is a fork of the popular LSLPlus editing evironment, to provide Linden 
     * Bug fix [#37](https://github.com/raysilent/lslforge/issues/37) (cannot Run -> Run as -> Launch in LSL Sim)
     * Bug fix some null pointer exceptions during recompiled
 * 2016-11-08 LSLForge **0.1.9** (Windows, Linux, Mac)
-    * JSON_APPEND, CLICK_ACTION_ZOOM added
+    * `JSON_APPEND`, `CLICK_ACTION_ZOOM` (seems to be absent in the SL viewer, use `7` instead) added
 * 2016-10-22 LSLForge **0.1.8** (Windows only)
-    * XP_ERROR_REQUEST_PERM_TIMEOUT missing added
+    * `XP_ERROR_REQUEST_PERM_TIMEOUT` missing added
 * 2016-10-20 LSLForge **0.1.7** (Windows only)
 
 ## Description
