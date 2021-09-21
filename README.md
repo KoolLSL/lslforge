@@ -14,16 +14,16 @@ LSLForge is a fork of the popular LSLPlus editing environment, to provide Linden
 ### News (newest first)
 
 * **0.1.9.8**
-    - [x] http://wiki.secondlife.com/wiki/LlOrd
-    - [x] http://wiki.secondlife.com/wiki/LlChar
-    - [x] http://wiki.secondlife.com/wiki/LlHash
-    - [x] `llGetEnv()` constants: `"whisper_range"`, `"chat_range"` & `"shout_range"` (in comments)
-    - [x] http://wiki.secondlife.com/wiki/LlGetInventoryAcquireTime
-    - [x] http://wiki.secondlife.com/wiki/LlOpenFloater
+    - [x] [`llOrd`](http://wiki.secondlife.com/wiki/LlOrd)
+    - [x] [`llChar`](http://wiki.secondlife.com/wiki/LlChar)
+    - [x] [`llHash`](http://wiki.secondlife.com/wiki/LlHash)
+    - [x] [`llGetEnv()`](http://wiki.secondlife.com/wiki/LlGetEnv) constants: `"whisper_range"`, `"chat_range"` & `"shout_range"` (in comments)
+    - [x] [`llGetInventoryAcquireTime`](http://wiki.secondlife.com/wiki/LlGetInventoryAcquireTime)
+    - [x] [`llOpenFloater`](http://wiki.secondlife.com/wiki/LlOpenFloater)
         - [ ] (Postponed) Return error codes seem to be missing in the viewer.
-    - [x] http://wiki.secondlife.com/wiki/CLICK_ACTION_DISABLED
-    - [ ] (Postponed) `TARGETED_EMAIL_ROOT_CREATOR` seems to be eliminated, however still exists in the viewer, so we keep it for now.
-    - [x] Mark `llXorBase64StringsCorrect` as deprecated in comments.
+    - [x] [`CLICK_ACTION_DISABLED`](http://wiki.secondlife.com/wiki/CLICK_ACTION_DISABLED)
+    - [ ] (Postponed) [`TARGETED_EMAIL_ROOT_CREATOR`](http://wiki.secondlife.com/wiki/TARGETED_EMAIL_ROOT_CREATOR) is eliminated (exists in the viewer for backward compatibility most likely). It should be safer to remove it completely from the IntelliSense for early error discovery rather than keep it here.
+    - [x] Mark [`llXorBase64StringsCorrect`](http://wiki.secondlife.com/wiki/LlXorBase64StringsCorrect) as deprecated in comments.
 
 * **0.1.9.7**
     * Fixed bugs (Thanks [@PellSmit](https://github.com/PellSmit)))
