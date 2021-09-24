@@ -35,7 +35,7 @@ import Control.Monad.Except
 import Control.Monad.Identity
 import qualified Control.Monad.State as SM
 import Control.Monad.State(MonadState)
-import Data.Map hiding(filter,map)
+import Data.Map hiding(filter,map,splitAt)
 import qualified Data.IntMap as IM
 import Data.Label
 import Language.Haskell.TH
