@@ -53,6 +53,9 @@ module Language.Lsl.Internal.InternalLLFuncs(
     llXorBase64Strings,
     llXorBase64StringsCorrect,
     llSHA1String,
+    llChar,
+    llOrd,
+    llHash,
     -- Math functions
     llCos,
     llSin,
@@ -142,6 +145,7 @@ internalLLFuncs = [
     ("llAxisAngle2Rot",llAxisAngle2Rot),
     ("llBase64ToInteger",llBase64ToInteger),
     ("llBase64ToString",llBase64ToString),
+    ("llChar",llChar),
     ("llCeil",llCeil),
     ("llCos",llCos),
     ("llCSV2List",llCSV2List),
@@ -155,6 +159,7 @@ internalLLFuncs = [
     ("llGetListEntryType",llGetListEntryType),
     ("llGetListLength",llGetListLength),
     ("llGetSubString",llGetSubString),
+    ("llHash",llHash),
     ("llInsertString",llInsertString),
     ("llIntegerToBase64",llIntegerToBase64),
     ("llList2CSV",llList2CSV),
@@ -175,6 +180,7 @@ internalLLFuncs = [
     ("llLog10",llLog10),
     ("llMD5String",llMD5String),
     ("llModPow",llModPow),
+    ("llOrd",llOrd),
     ("llParseString2List",llParseString2List),
     ("llParseStringKeepNulls",llParseStringKeepNulls),
     ("llPow",llPow),
@@ -290,6 +296,17 @@ llMD5String _ [SVal string, IVal nonce] =
 
 llSHA1String _ [SVal string] = continueWith $ SVal (hashStoHex string)
 -- Math functions
+
+llChar _ [IVal val] = continueWith $ SVal [chr $ fromInt val]
+
+llOrd _ [SVal str, IVal ind] = continueWith $ iVal $ go str i
+    where i = if ind < 0 then ind + fromInt (length str) else ind
+          go [] _ = 0
+          go (x:_) 0 = ord x
+          go (_:xs) n = go xs (n - 1)
+
+llHash _ [SVal str] = continueWith $ IVal $
+    foldl (\acc x -> fromInt (ord x) + shiftL acc 6 + shiftL acc 16 - acc) 0 str
 
 unaryToLL :: (RealFloat a, Monad m) => (a -> a) -> [LSLValue a] -> m (EvalResult,LSLValue a)
 unaryToLL f [FVal v] = continueWith $ FVal (f v)
