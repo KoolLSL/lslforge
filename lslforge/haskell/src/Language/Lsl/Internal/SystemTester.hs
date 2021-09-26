@@ -36,16 +36,16 @@ event = SimEvent <$> req "name" text <*> def "args" [] (liste "arg" arg)
 arg = SimEventArg <$> req "name" text <*> req "value" text
 
 outputToXML (SimInfo _ log state) =
-    (emit "sim-info" [] [emitLog log,emitState state]) ""
+    emit "sim-info" [] [emitLog log,emitState state] ""
 outputToXML (SimEnded _ log state) =
-    (emit "sim-ended" [] [emitLog log,emitState state]) ""
+    emit "sim-ended" [] [emitLog log,emitState state] ""
 outputToXML (SimSuspended _ suspendInfo log state) =
-    (emit "sim-suspended" [] [emitExecutionInfo suspendInfo,
+    emit "sim-suspended" [] [emitExecutionInfo suspendInfo,
                               emitLog log,
-                              emitState state]) ""
+                              emitState state] ""
 
 emitLog log =
-    emit "messages" [] $ map emitMessage (log)
+    emit "messages" [] $ map emitMessage log
 
 emitMessage logMessage =
     emit "message" [] [
@@ -59,9 +59,9 @@ emitState state =
                       emitPrims (simStateInfoPrims state),
                       emitAvatars (simStateInfoAvatars state),
                       emitScripts (simStateInfoScripts state) ]
-emitPrims prims = emitList "prims" emitPrim prims
-emitAvatars avatars = emitList "avatars" emitAvatar avatars
-emitScripts scripts = emitList "scripts" emitScript scripts
+emitPrims = emitList "prims" emitPrim
+emitAvatars = emitList "avatars" emitAvatar
+emitScripts = emitList "scripts" emitScript
 
 emitPrim (LSLKey key,name) =
     emit "prim" [] [emitSimple "key" [] key, emitSimple "name" [] name]
@@ -81,6 +81,6 @@ testSystem = do
                     let command = commandFromXML s
                         (e,state') = simStep state command
                     in (state',outputToXML e)
-            processLinesS (Left (worldDef,(map (\(a,(b,_))->(a,b)) scripts),libFromAugLib augLib)) "quit" runStep
+            processLinesS (Left (worldDef,map (\(a,(b,_))->(a,b)) scripts,libFromAugLib augLib)) "quit" runStep
     where init s = worldXMLAccept s $
                 (,) <$> req "source_files" sources <*> req "world-def" world

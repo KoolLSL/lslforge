@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE LambdaCase #-}
 module Language.Lsl.Sim(
     SimStatus(..),
     SimStateInfo(..),
@@ -30,7 +33,7 @@ import Prelude hiding(id,(.))
 import Control.Applicative
 import Control.Arrow((&&&))
 import Control.Category
-import Control.Monad((>=>),filterM,foldM,forM_,liftM,liftM2,unless,when)
+import Control.Monad((>=>),filterM,foldM,forM_,liftM2,unless,when)
 import Control.Monad.State(StateT(..))
 import Control.Monad.Identity(Identity(..))
 import Control.Monad.Except(MonadError(..))
@@ -79,6 +82,7 @@ import Language.Lsl.Internal.WorldState
 
 import System.Random(mkStdGen)
 import Text.ParserCombinators.Parsec hiding (State,(<|>),optional,many)
+import Data.Bifunctor (Bifunctor(first))
 
 -- this is extremely approximate....
 objRadius oid = do
@@ -99,7 +103,7 @@ getPrimInfo pkey =
                   return $ do
                       plist <- mkeys
                       i <- elemIndex pkey plist
-                      return (p1Key, (fromInt i), getI primName p)
+                      return (p1Key, fromInt i, getI primName p)
 
 pushEvent e key sid =
     ((scriptEventQueue.lm (key,sid).worldScripts) `modM_` (++[e])) <||>
@@ -133,7 +137,7 @@ newWorld slice maxt iq lib scripts avatars objs prims activeScripts regions
         _randGen = mkStdGen 1,
         _wlibrary = lib,
         _wscripts = scripts,
-        _worldEventHandler = fmap (flip (,) []) eventHandler,
+        _worldEventHandler = fmap (, []) eventHandler,
         _worldAvatars = avatars,
         _worldBreakpointManager = emptyBreakpointManager,
         _worldSuspended = Nothing,
@@ -166,7 +170,7 @@ updatePrim f key =
         case M.lookup key prims of
             Nothing -> logAMessage LogWarn "sim" ("prim " ++ unLslKey key ++ " not found")
             Just p -> do p' <- f p
-                         wprims =: (M.insert key p' prims)
+                         wprims =: M.insert key p' prims
 
 
 processEvents :: (Monad m) => WorldE m ()
@@ -211,15 +215,13 @@ processEvent chat@(Chat chan name key msg location range) =
        -- event goes to all UNIQUE addresses in list
        let addresses = nub $ map listenAddress listeners'
        mapM_ (uncurry (pushEvent (Event "listen" [IVal chan, SVal name, KVal key, SVal msg] M.empty))) addresses
-       when (chan == 0) $ case range of
-           Nothing -> return ()
-           Just dist -> pushChatToAvatars location dist
+       when (chan == 0) $ forM_ range (pushChatToAvatars location)
     where locateListener (listener,active) = do
               (VVal x y z) <- getPos (listenerPrimKey listener)
               region <- getPrimRegion (listenerPrimKey listener)
               return (listener,active,(region,(x,y,z)))
           pushChatToAvatars location range =
-              liftM M.elems (getM worldAvatars) >>= mapM_ (pushChatToAvatar location range)
+              getM worldAvatars >>= mapM_ (pushChatToAvatar location range) . M.elems
           pushChatToAvatar (region,pos) range avatar =
               when (region == getI avatarRegion avatar && dist3d2 pos (getI avatarPosition avatar) <= range^2) $
                   putWorldEvent 0 $ AvatarInputEvent (getI avatarKey avatar) (AvatarHearsChat name key msg)
@@ -238,13 +240,13 @@ processEvent evt@(TimerEvent interval (primKey,scriptName)) =
 processEvent evt@(SensorEvent (pk,sn) name key stype range arc rpt) =
     runAndLogIfErr "problem processing sensor event" () $ do
        t <- getM tick
-       maybe (return ()) (\ interval -> putWorldEvent interval evt) rpt
+       maybe (return ()) (`putWorldEvent` evt) rpt
        sensedObjects <- senseObjects
        sensedAvatars <- senseAvatars
        let list = take 16 (sensedObjects ++ sensedAvatars)
        if null list
            then pushEvent (Event "no_sensor" [] M.empty) pk sn
-           else pushEvent (Event "sensor" [(iVal $ length list)] (M.fromList (zipWith (\ i k -> ("key_" ++ show i,KVal k)) [0..] list))) pk sn
+           else pushEvent (Event "sensor" [iVal $ length list] (M.fromList (zipWith (\ i k -> ("key_" ++ show i,KVal k)) [0..] list))) pk sn
     where senseObjects = do
               pos <- getGlobalPos pk
               rot <- getGlobalRot pk
@@ -259,7 +261,7 @@ processEvent evt@(SensorEvent (pk,sn) name key stype range arc rpt) =
               if stype .&. cAgent /= 0 then do
                       pos <- getGlobalPos pk
                       rot <- getGlobalRot pk
-                      attachKey <- (fmap $ getI attachmentKey) <$> getM (primAttachment.wprim pk)
+                      attachKey <- fmap (getI attachmentKey) <$> getM (primAttachment.wprim pk)
                       let fwd = fwdFromRot rot
                       avs <- allAvs attachKey
                       return [ getI avatarKey av | av <- avs, withinSensorArea pos fwd range arc (getI avatarPosition av)]
@@ -276,7 +278,7 @@ processEvent evt@(SensorEvent (pk,sn) name key stype range arc rpt) =
               mapM (getM . wprim) [ k | LSLObject { _primKeys = (k:_) } <- M.elems objs, exclude /= k]
           objectStatus root = do
               pks <- getM $ primKeys.lm root.wobjects
-              stat <- foldM (\ x -> liftM (x .|.) . determineActivePassiveScripted) 0 pks
+              stat <- foldM (\ x -> fmap (x .|.) . determineActivePassiveScripted) 0 pks
               if stat .&. cActive /= 0 && stat .&. cPassive /= 0
                  then return (stat .&. complement cPassive)
                  else return stat
@@ -295,7 +297,7 @@ processEvent (HTTPRequestEvent (pk,sn) key url method mimetype maxlength verify 
                 case simFunc lib (moduleName,"httpRequest") state [SVal url, SVal method, SVal mimetype, IVal maxlength, IVal verify, SVal body] of
                     Left s -> throwError s
                     Right (SVal msg,results) | not (null msg) -> do
-                        worldEventHandler =: (Just (moduleName, results))
+                        worldEventHandler =: Just (moduleName, results)
                         throwError msg
                                              | otherwise ->
                         let mval p v = if p v then Just v else Nothing
@@ -308,7 +310,7 @@ processEvent (HTTPRequestEvent (pk,sn) key url method mimetype maxlength verify 
                             events = fromMaybe (LVal []) (lookup "outEvents" results)
                         in do putHTTPResponseEvent pk sn key status metadata body 2
                               processEventsList events
-                              worldEventHandler =: (Just (moduleName, results))
+                              worldEventHandler =: Just (moduleName, results)
                     Right _ -> throwError "invalid web handling function, must return a string"
             WebHandlingByInternet timeout -> do
                 let event = SimEvent "http_request" [
@@ -345,7 +347,7 @@ processEvent (XMLReplyEvent key channel messageId sdata idata) =
                 case simFunc lib (moduleName, "xmlReply") state [SVal tag, SVal $ unLslKey channel, SVal sdata, IVal idata] of
                     Left s -> throwError s
                     Right (SVal msg, results) | not (null msg) -> do
-                        worldEventHandler =: (Just (moduleName, results))
+                        worldEventHandler =: Just (moduleName, results)
                         throwError msg
                                               | otherwise ->
                         let events = fromMaybe (LVal []) (lookup "outEvents" results) in do
@@ -360,11 +362,11 @@ processEvent (XMLReplyEvent key channel messageId sdata idata) =
                 worldOutputQueue `modM_`  (event:)
 processEvent (DialogEvent agent message buttons channel source) =
     runAndLogIfErr "invalid dialog event" () $
-        getM worldEventHandler >>= (\ mhandler -> case mhandler of
+        getM worldEventHandler >>= (\case
             Nothing -> return ()
             Just (moduleName,state) -> do
                 lib <- getM wlibrary
-                avName <- liftM (getI avatarName) (getM $ wav agent) <||> throwError "problem finding avatar"
+                avName <- fmap (getI avatarName) (getM $ wav agent) <||> throwError "problem finding avatar"
                 objName <- getM (primName.wprim source) <||> throwError "problem finding object"
                 case hasFunc lib (moduleName,"dialog") of
                     Left s -> throwError s
@@ -382,7 +384,7 @@ processEvent (DialogEvent agent message buttons channel source) =
                                     events = fromMaybe (LVal []) (lookup "outEvents" results)
                                 in do
                                     warn
-                                    when (selection >= 0 && selection < (fromInt $ length buttons)) $
+                                    when (selection >= 0 && selection < fromInt (length buttons)) $
                                         putChat sayRange agent channel (buttons !! fromInt selection)
                                     processEventsList events
                                     worldEventHandler =: Just (moduleName, results))
@@ -402,7 +404,7 @@ processEvent (RezObjectEvent links pos vel rot start pk copy atRoot) =
         mapM_ activateScripts links'
         let rootKey = getI primKey (head links')
         lm rootKey.wobjects =: LSLObject (map (getI primKey) links') defaultDynamics { _objectPosition = pos' }
-        wprims `modM_` (\ m -> (foldl' (\ m l -> M.insert (getI primKey l) l m) m links'))
+        wprims `modM_` (\ m -> foldl' (\ m l -> M.insert (getI primKey l) l m) m links')
         pushEventToObject (Event "on_rez" [IVal start] M.empty) rootKey
         pushEventToPrim (Event "object_rez" [KVal rootKey] M.empty) pk
     where activateScripts prim = do
@@ -420,7 +422,7 @@ processEvent (RezObjectEvent links pos vel rot start pk copy atRoot) =
               key <- newKey
               let name = inventoryItemName item
               newData <- if isInvObjectItem item
-                  then liftM InvObject (mapM updateKeys (invObjectPrims $ inventoryItemData item))
+                  then fmap InvObject (mapM updateKeys (invObjectPrims $ inventoryItemData item))
                   else return (inventoryItemData item)
               return $ item { inventoryItemIdentification = InventoryItemIdentification (name,key), inventoryItemData = newData }
 processEvent (ResetScriptEvent pk sn) =
@@ -470,7 +472,7 @@ processEventList [SVal "xml_request", SVal sourceId, KVal channel, IVal idata, S
     putWorldEvent delay (XMLRequestEvent (XMLRequestInternal sourceId) channel idata sdata)
 processEventList l = logAMessage LogWarn "sim" ("Invalid event from event handler: " ++ lslShowVal (LVal l))
 
-processAvatarOutputEvent k (AvatarTouch {avatarTouchPrimKey = pk, avatarTouchDuration = secs}) = do
+processAvatarOutputEvent k AvatarTouch {avatarTouchPrimKey = pk, avatarTouchDuration = secs} = do
         now <- getM tick
         worldTouches `modM_` M.alter (alt now) pk
     where alt start Nothing = Just [newTouch start]
@@ -478,17 +480,17 @@ processAvatarOutputEvent k (AvatarTouch {avatarTouchPrimKey = pk, avatarTouchDur
           newTouch start = Touch {touchAvatarKey = k, touchPrimKey = pk,
               touchFace = 0, touchST = (0.5, 0.5), touchStartTick = start,
               touchEndTick = start + durationToTicks secs}
-processAvatarOutputEvent k (AvatarWhisper {avatarChatChannel = chan, avatarChatMessage = msg}) = avChat 10 msg k chan
-processAvatarOutputEvent k (AvatarSay {avatarChatChannel = chan, avatarChatMessage = msg}) = avChat 20 msg k chan
-processAvatarOutputEvent k (AvatarShout {avatarChatChannel = chan, avatarChatMessage = msg}) = avChat 100 msg k chan
-processAvatarOutputEvent k (AvatarPay {avatarPayPrimKey = pk, avatarPayAmount = val}) = runAndLogIfErr "problem handling avatar payment" () $
+processAvatarOutputEvent k AvatarWhisper {avatarChatChannel = chan, avatarChatMessage = msg} = avChat 10 msg k chan
+processAvatarOutputEvent k AvatarSay {avatarChatChannel = chan, avatarChatMessage = msg} = avChat 20 msg k chan
+processAvatarOutputEvent k AvatarShout {avatarChatChannel = chan, avatarChatMessage = msg} = avChat 100 msg k chan
+processAvatarOutputEvent k AvatarPay {avatarPayPrimKey = pk, avatarPayAmount = val} = runAndLogIfErr "problem handling avatar payment" () $
     primHasActiveHandler k "money" >>= flip when (pushEventToPrim (Event "money" [KVal pk, IVal val] M.empty) pk)
-processAvatarOutputEvent k (AvatarControl { avatarNewControlBits = newBits }) = runAndLogIfErr "problem processing control change" () $ do
+processAvatarOutputEvent k AvatarControl { avatarNewControlBits = newBits } = runAndLogIfErr "problem processing control change" () $ do
     av <- getM $ wav k
     prev <- getM $ avatarControls.wav k
     avatarControls.wav k =: newBits
     flip (maybe (return ())) (getI avatarControlListener av) $
-        \ (AvatarControlListener {avatarControlListenerMask = mask, avatarControlListenerScript = (pk,sn)}) ->
+        \ AvatarControlListener {avatarControlListenerMask = mask, avatarControlListenerScript = (pk,sn)} ->
             pushEvent (Event "control" [KVal k, IVal newBits, IVal (newBits `xor` prev)] M.empty) pk sn
 processAvatarOutputEvent k (AvatarFaceTouch pk secs face st) = do
     now <- getM tick
@@ -501,7 +503,7 @@ processAvatarOutputEvent k (AvatarFaceTouch pk secs face st) = do
 processAvatarOutputEvent k (AvatarHTTPRequest url method body ip ua) =
     case parseURL url of
         Nothing -> logAMessage LogWarn "sim" ("URL " ++ url ++ " unrecognized")
-            >> putWorldEvent 0 (AvatarInputEvent k (AvatarHTTPBadRequest))
+            >> putWorldEvent 0 (AvatarInputEvent k AvatarHTTPBadRequest)
         Just (base,path,query) -> do
             dest <- optional $ getM (lm base.worldURLRegistry)
             case dest of
@@ -509,10 +511,10 @@ processAvatarOutputEvent k (AvatarHTTPRequest url method body ip ua) =
                     expire <- (+) <$> getM tick <*> pure (durationToTicks 25.0)
                     rk <- newKey
                     putWorldEvent 0 (AvatarInputEvent k (AvatarHTTPRequestKey rk))
-                    lm rk.worldPendingHTTPResponses =: (PendingHTTPResponse k (pk,sn) base path query ip ua expire)
+                    lm rk.worldPendingHTTPResponses =: PendingHTTPResponse k (pk,sn) base path query ip ua expire
                     pushEvent (Event "http_request" [KVal rk, SVal method, SVal body] M.empty) pk sn
                 Nothing -> logAMessage LogWarn "sim" ("URL " ++ url ++ " not registered")
-                    >> putWorldEvent 1 (AvatarInputEvent k (AvatarHTTPBadRequest))
+                    >> putWorldEvent 1 (AvatarInputEvent k AvatarHTTPBadRequest)
 
 avChat range msg key chan = runAndLogIfErr "problem processing chat" () $ do
     logAMessage LogInfo ("av:" ++ unLslKey key) ("chat! chan: " ++ show chan ++ ", range: " ++ show range ++ ", message: " ++ show msg)
@@ -522,17 +524,17 @@ avChat range msg key chan = runAndLogIfErr "problem processing chat" () $ do
 processAvatarInputEvent k inputEvent = runAndLogIfErr "problem processing event for avatar" () $ do
         av <- getM $ wav k
         let avInfo = [ IVal lslForgeAvatarKey, KVal (getI avatarKey av),
-                       IVal lslForgeAvatarPos, ((vec2VVal . getI avatarPosition) av),
-                       IVal lslForgeAvatarRot, ((rot2RVal . getI avatarRotation) av),
+                       IVal lslForgeAvatarPos, (vec2VVal . getI avatarPosition) av,
+                       IVal lslForgeAvatarRot, (rot2RVal . getI avatarRotation) av,
                        IVal lslForgeAvatarName, SVal (getI avatarName av) ]
-        flip (maybe (return ())) (getI avatarEventHandler av) (\ (moduleName,state) -> do
+        maybe (return ()) (\ (moduleName,state) -> do
             lib <- getM wlibrary
             case callAvatarEventProcessor k moduleName inputEvent lib state avInfo of
                 Nothing -> return ()
                 Just (Left s) -> throwError s
                 Just (Right (LVal events,result)) -> do
                     mapM_ (putAvatarOutputEvent k) events
-                    avatarEventHandler.wav k =: Just (moduleName,result))
+                    avatarEventHandler.wav k =: Just (moduleName,result)) (getI avatarEventHandler av)
 
 avEventProcCallInfo (AvatarOwnerSay key msg) avInfo = ("onOwnerSay",[SVal $ unLslKey key, SVal msg, LVal avInfo])
 avEventProcCallInfo (AvatarHearsChat name key msg) avInfo = ("onChat",[SVal name, SVal $ unLslKey key, SVal msg, LVal avInfo])
@@ -542,7 +544,7 @@ avEventProcCallInfo (AvatarLoadURL msg url) avInfo = ("onLoadURL",[SVal msg, SVa
 avEventProcCallInfo (AvatarMapDestination simName position) avInfo = ("onMapDestination",[SVal simName, vec2VVal position, LVal avInfo])
 avEventProcCallInfo (AvatarHTTPResponse k status body) avInfo = ("onHTTPResponse",[SVal $ unLslKey k, IVal status, SVal body, LVal avInfo])
 avEventProcCallInfo (AvatarHTTPRequestKey k) avInfo = ("onHTTPRequestKey",[SVal $ unLslKey k, LVal avInfo])
-avEventProcCallInfo (AvatarHTTPBadRequest) avInfo = ("onHTTPBadRequest",[LVal avInfo])
+avEventProcCallInfo AvatarHTTPBadRequest avInfo = ("onHTTPBadRequest",[LVal avInfo])
 
 callAvatarEventProcessor k moduleName avEvent lib state avInfo =
     case hasFunc lib (moduleName,funcName) of
@@ -562,7 +564,7 @@ parseURL input = case runParser p () "" input of
     Left _ -> Nothing
     Right pair -> Just pair
     where p = do
-              scheme <- ((++) <$> string "http" <*> (string "s://" <|> string "://"))
+              scheme <- (++) <$> string "http" <*> (string "s://" <|> string "://")
               subdomain <- many (alphaNum <|> char '-')
               fixedPortion <- string ".example.com:12043/cap/"
               key <- many (alphaNum <|> char '-')
@@ -576,11 +578,11 @@ activateScript pk sn scriptId Nothing startParam =
            Nothing -> logAMessage LogWarn "sim" ("script " ++ scriptId ++ " not found")
            Just (Left s) -> logAMessage LogWarn "sim" ("script " ++ scriptId ++ " not valid")
            Just (Right code) ->
-               lscript pk sn =: (mkScript (initLSLScript code))
+               lscript pk sn =: mkScript (initLSLScript code)
 activateScript pk sn _ (Just image) startParam =
     lscript pk sn =: setI scriptStartParameter startParam (mkScript image)
 
-matchListener (Chat chan' sender' key' msg' (region,position) range) ((Listener pkey sid chan sender key msg),active,(region',position')) =
+matchListener (Chat chan' sender' key' msg' (region,position) range) (Listener pkey sid chan sender key msg,active,(region',position')) =
     active &&
     region == region' &&
     chan == chan' &&
@@ -627,9 +629,7 @@ runScripts =
 
 findAndRunScript scriptKey =
     do scripts <- getM worldScripts
-       case M.lookup scriptKey scripts of
-          Nothing -> return ()
-          Just script -> checkAndRunScript scriptKey script
+       forM_ (M.lookup scriptKey scripts) (checkAndRunScript scriptKey)
 
 checkAndRunScript k@(pkey,sname) script
     | getI scriptActive script = do
@@ -662,7 +662,7 @@ runScript parent index pkey sname primName img q =
                        scriptImage.lscript pkey sname =: img''
                        scriptEventQueue.lscript pkey sname =: q'
                        case executionState img'' of
-                           Suspended bp -> worldSuspended =: (Just (pkey,sname))
+                           Suspended bp -> worldSuspended =: Just (pkey,sname)
                            _ -> worldSuspended =: Nothing
 
 
@@ -673,18 +673,18 @@ handleTouches = do
         touchLists <- M.toList <$> getM worldTouches
         runAndLogIfErr "problem handling touches" () $ do
             starts <- collectTouches "touch_start" M.empty $
-                         concatMap (\ (_,tl) -> [ touch | touch@(Touch { touchStartTick = t }) <- tl, t > before]) touchLists
+                         concatMap (\ (_,tl) -> [ touch | touch@Touch { touchStartTick = t } <- tl, t > before]) touchLists
             ongoings <- collectTouches "touch" M.empty $
                 concatMap
-                (\ (_,tl) -> [ touch | touch@(Touch { touchStartTick = ts, touchEndTick = te }) <- tl, te >= now && ts <= before]) touchLists
+                (\ (_,tl) -> [ touch | touch@Touch { touchStartTick = ts, touchEndTick = te } <- tl, te >= now && ts <= before]) touchLists
             ends <- collectTouches "touch_end" M.empty $
-                       concatMap (\ (_,tl) -> [ touch | touch@(Touch { touchEndTick = te }) <- tl, te <= now]) touchLists
+                       concatMap (\ (_,tl) -> [ touch | touch@Touch { touchEndTick = te } <- tl, te <= now]) touchLists
             mapM_ (uncurry (sendTouch "touch_start")) $ M.toList starts
             mapM_ (uncurry (sendTouch "touch")) $ M.toList ongoings
             mapM_ (uncurry (sendTouch "touch_end")) $ M.toList ends
-        let nonends = [ (pk,[ t | t@(Touch { touchEndTick = te }) <- list, te > now]) | (pk,list) <- touchLists ]
+        let nonends = [ (pk,[ t | t@Touch { touchEndTick = te } <- list, te > now]) | (pk,list) <- touchLists ]
         worldTouchCheckTime =: now
-        worldTouches =: (M.fromList nonends)
+        worldTouches =: M.fromList nonends
         return ()
 
 sendTouch ttype k tl =
@@ -698,7 +698,7 @@ sendTouch ttype k tl =
                M.insert ("st_" ++ show i) (VVal s t 0) $ m
 
 collectTouches touchType acc [] = return acc
-collectTouches touchType acc (t@(Touch { touchPrimKey = pk }):ts) = do
+collectTouches touchType acc (t@Touch { touchPrimKey = pk }:ts) = do
     lneeds <- primHasActiveHandler pk touchType
     linkNum <- getPrimLinkNum pk
     rk <- getRootPrim pk
@@ -733,24 +733,23 @@ runPhysics = do
                             where (_,_,fz0) = force `add3d` impulseFNow
                     let dampF = case getI objectPositionTarget dynm of
                                      Nothing -> (0,0,0)
-                                     Just (PositionTarget { positionTargetTau = tau, positionTargetLocation = l }) ->
+                                     Just PositionTarget { positionTargetTau = tau, positionTargetLocation = l } ->
                                          dampForce tau l pos0 mass vel0 (force `add3d` impulseFNow)
-                                     Just (Repel { positionTargetTau = tau, positionTargetHeight = z }) ->
+                                     Just Repel { positionTargetTau = tau, positionTargetHeight = z } ->
                                              if z0 <= 0.5 * z then heightDampF tau z else (0,0,0)
-                                     Just (Hover { positionTargetTau = tau, positionTargetHeight = z}) -> heightDampF tau z
+                                     Just Hover { positionTargetTau = tau, positionTargetHeight = z} -> heightDampF tau z
                     let (pos,vel) = kin t0 t1 ticksToDuration 0 mass pos0 vel0 (force `add3d` dampF) impulse
                     -- TODO: local vs global rotations in torque
                     -- TODO: rotational impulses
                     radius <- objRadius pk
                     let torque = totalTorque t0 t1 ticksToDuration
                                      [(fst $ getI objectTorque dynm,t1),
-                                      (fst $ fst $ getI objectRotationalImpulse dynm,
-                                       snd $ getI objectRotationalImpulse dynm)]
+                                      first fst (getI objectRotationalImpulse dynm)]
                     let dampingTorque = case getI objectRotationTarget dynm of
                                             Nothing -> (0,0,0)
-                                            Just rt@(RotationTarget {rotationTargetTau = tau,
+                                            Just rt@RotationTarget {rotationTargetTau = tau,
                                                                      rotationTargetStrength = strength,
-                                                                     rotationTarget = target}) ->
+                                                                     rotationTarget = target} ->
                                                 dampTorque tau strength target
                                                            (getI objectRotation dynm) mass radius (getI objectOmega dynm) torque
                     let (rot,omega) = rotDyn (ticksToDuration (t1 - t0)) radius mass (getI objectRotation dynm)
@@ -770,27 +769,27 @@ handleMovers :: Monad m => WorldE m ()
 handleMovers = runAndLogIfErr "problem determining which objects moved" () $
     do lastPositions <- getM worldLastPositions
        let lastKeys = S.fromList $ M.keys lastPositions
-       curPositions <- M.keys <$> (getM wobjects) >>= mapM (\ k -> liftM ((,)k) (getObjectPosition k))
+       curPositions <- getM wobjects >>= mapM (\ k -> fmap (k,) (getObjectPosition k)) . M.keys
        let curKeys = S.fromList $ map fst curPositions
        let newKeys = curKeys `S.difference` lastKeys
        let keysFromBefore = curKeys `S.difference` newKeys
-       m <- return . M.fromList =<< mapM ( \ (k,pos) -> if k `S.member` keysFromBefore
-                                                        then do (moving,lpos) <- mlookup k lastPositions
-                                                                let moving' = lpos /= pos
-                                                                when (moving' && not moving) $
-                                                                    pushEventToPrim (Event "moving_start" [] M.empty) k
-                                                                when (moving && not moving') $
-                                                                    pushEventToPrim (Event "moving_end" [] M.empty) k
-                                                                return (k,(moving', pos))
-                                                        else return (k,(False,pos))) curPositions
+       m <- M.fromList <$> mapM ( \ (k,pos) -> if k `S.member` keysFromBefore
+                                               then do (moving,lpos) <- mlookup k lastPositions
+                                                       let moving' = lpos /= pos
+                                                       when (moving' && not moving) $
+                                                           pushEventToPrim (Event "moving_start" [] M.empty) k
+                                                       when (moving && not moving') $
+                                                           pushEventToPrim (Event "moving_end" [] M.empty) k
+                                                       return (k,(moving', pos))
+                                               else return (k,(False,pos))) curPositions
        worldLastPositions =: m
 
 handleObjectCollisions prims = do
         -- look at all non-phantom prims
-        primBoxes <- mapM (\ (k,p) -> liftM ((,) k . (,) p) (getPrimBox k)) prims
+        primBoxes <- mapM (\ (k,p) -> fmap ((,) k . (,) p) (getPrimBox k)) prims
         --let voldtct = map fst $ filter (primVolumeDetect . snd) prims
-        voldtct <- liftM (map fst) $ flip filterM prims (\ (_,prim) ->
-            getM $ objectVolumeDetect.dyn (fromMaybe (getI primKey prim) (getI primParent prim)))
+        voldtct <- map fst <$> filterM (\ (_,prim) ->
+            getM $ objectVolumeDetect.dyn (fromMaybe (getI primKey prim) (getI primParent prim))) prims
         let cmp x y = compare (fst x) (fst y)
         let curCollisions = S.fromList [ (k0,k1) | ((k0,(p0,_)),(k1,(p1,_))) <- checkIntersections (snd . snd) cmp primBoxes,
                                                    getI primParent p0 /= Just k1 &&
@@ -808,17 +807,17 @@ handleObjectCollisions prims = do
                     case parent of
                         Nothing -> getM $ primAttachment.wprim k
                         Just ok -> getM $ primAttachment.wprim ok
-            objCollisions' <- liftM (map fst . filter (\ ((k,_),mv) -> (k `notElem` voldtct) || isJust mv))
-                    (mapM (\ v@(k,_) -> (liftM ((,) v) (attachment k))) objCollisions)
+            objCollisions' <- fmap (map fst . filter (\ ((k,_),mv) -> (k `notElem` voldtct) || isJust mv))
+                    (mapM (\ v@(k,_) -> fmap (v,) (attachment k)) objCollisions)
             mapM_ (send "collision") objCollisions')
         toObjCollisions formerCollisions "collision_end" >>= mapM_ (send "collision_end")
         worldCollisions =: curCollisions
     where send :: Monad m => String -> (LSLKey,[(LSLInteger,LSLKey)]) -> WorldE m ()
           send hn (pk,oinfo) =  collisionScripts >>= mapM_ (sendScript hn pk oinfo)
-              where collisionScripts = filtMapM validScript =<< (getPrimScripts pk)
+              where collisionScripts = filtMapM validScript =<< getPrimScripts pk
 --                          liftM (map inventoryItemName) (getPrimScripts pk) >>=
 --                              filterM (\ sn -> scriptHasActiveHandler pk sn hn)
-                    validScript itm@(InventoryItem { inventoryItemData = InvScript { invScriptLibId = lnm }}) = do
+                    validScript itm@InventoryItem { inventoryItemData = InvScript { invScriptLibId = lnm }} = do
                         lib <- getM wscripts
                         case lookup lnm lib of
                            Just (Right _) -> do
@@ -836,16 +835,14 @@ handleObjectCollisions prims = do
                           | null name && (null (unLslKey key) || nullKey == key) && not accept -> return ()
                           | accept -> filterM (matchesIn name key) oinfo >>= pushit
                           | otherwise -> filterM (matchesOut name key) oinfo >>= pushit
-              where matchesIn name key (_,k) = if k == key
-                                                   then return True
-                                                   else (if null (unLslKey key) || key == nullKey
-                                                             then (name==) <$> (getM $ primName.wprim k)
-                                                             else return False)
-                    matchesOut name key (_,k) = if k == key
-                                                    then return False
-                                                    else (if null (unLslKey key) || key == nullKey
-                                                              then (not . (name==)) <$> (getM $ primName.wprim k)
-                                                              else return True)
+              where matchesIn name key (_,k)
+                      | k == key = return True
+                      | null (unLslKey key) || key == nullKey = (name==) <$> getM (primName.wprim k)
+                      | otherwise = return False
+                    matchesOut name key (_,k)
+                      | k == key = return False
+                      | null (unLslKey key) || key == nullKey = (name /=) <$> getM (primName.wprim k)
+                      | otherwise = return True
                     pushit oinfo = unless (null oinfo) $ pushEvent ev pk sn
                         where ev = Event hn [iVal $ length oinfo]
                                       (M.fromList $
@@ -853,9 +850,9 @@ handleObjectCollisions prims = do
                                           zipWith (\ i (n,_) -> ("integer_" ++ show i, IVal n)) [0..] oinfo)
           toObjCollisions collisionsS hn = do
                   passed <- passes primColliders
-                  colliders' <- mapM (\ (k,cs) -> (getPrimLinkNum k >>= \ i -> return (k,i,cs))) primColliders
+                  colliders' <- mapM (\ (k,cs) -> getPrimLinkNum k >>= \ i -> return (k,i,cs)) primColliders
                   colliders'' <- mapM pk2ok (colliders' ++ passed)
-                  colliders''' <-  mapM (\ (k,i,cs) -> liftM ((,,) k i) (filterM (objectHasVolDetect >=> (return . not)) cs)) colliders''
+                  colliders''' <-  mapM (\ (k,i,cs) -> fmap ((,,) k i) (filterM (objectHasVolDetect >=> (return . not)) cs)) colliders''
                   return $ M.toList (foldl' combine M.empty (map dist colliders'''))
               where collisions = S.toList collisionsS
                     dist (pk,i,cs) = (pk, zip (repeat i) cs)
@@ -874,13 +871,13 @@ handleObjectCollisions prims = do
                                 num <- getPrimLinkNum pk
                                 return ((parent,num,cs):rest)
                             else passes pcs
-                    pk2ok (pk,i,cs) = liftM ((,,) pk i) (primsToObjects cs)
-                    primsToObjects ks = liftM (nub . zipWith fromMaybe ks)
+                    pk2ok (pk,i,cs) = fmap ((,,) pk i) (primsToObjects cs)
+                    primsToObjects ks = fmap (nub . zipWith fromMaybe ks)
                         (mapM (\ k -> getM $ primParent.wprim k) ks)
                     pass hn k = do
-                        getM (primParent.wprim k) >>= maybe (return False) (pass')
+                        getM (primParent.wprim k) >>= maybe (return False) pass'
                         where pass' pk = liftM2 (||) (getM $ primPassTouches.wprim k)
-                                 (liftM not (k `primHasActiveHandler` hn))
+                                 (fmap not (k `primHasActiveHandler` hn))
                     fromListOfPairs [] = S.empty
                     fromListOfPairs ((x,y):ps) = (S.insert x . S.insert y) (fromListOfPairs ps)
                     collectColliders intsns pk = [ j | (Just j) <- map (other pk) intsns]
@@ -893,7 +890,7 @@ handleObjectCollisions prims = do
                                   | otherwise = Nothing
 
 handleLandCollisions prims = do
-        primBoxes <- mapM (\ (k,p) -> liftM ((,) k ) (getPrimBox k)) prims
+        primBoxes <- mapM (\ (k,p) -> fmap (k,) (getPrimBox k)) prims
         let curCollisions = S.fromList [ k | (k,((_,_,z),_)) <- primBoxes, z <= 0]
         oldCollisions <- getM worldLandCollisions
         let formerCollisions = oldCollisions `S.difference` curCollisions
@@ -906,12 +903,12 @@ handleLandCollisions prims = do
                   pass <- getM $ primPassCollisions.wprim pk
                   pos <- getGlobalPos pk >>= ( \ (x,y,_) -> return (x,y,0))
                   liveScripts <- getActualPrimScripts pk >>=
-                      (\ ss -> return [ s | s@(_,script) <- ss, getI scriptActive script == True])
+                      (\ ss -> return [ s | s@(_,script) <- ss, getI scriptActive script])
                   unless (null liveScripts) $ send' pos pk
                   when (null liveScripts || pass) $ getRootPrim pk >>= send' pos
               where send' pos k = do
-                        scripts <- liftM (map inventoryItemName) (getPrimScripts k) >>=
-                                   filterM (\ sn -> scriptHasActiveHandler k sn hn)
+                        scripts <- getPrimScripts k >>=
+                                   filterM (\ sn -> scriptHasActiveHandler k sn hn) . map inventoryItemName
                         forM_ scripts (pushEvent (Event hn [vec2VVal pos] M.empty) k)
 
 handleCollisions :: (Monad m) => WorldE m ()
@@ -921,13 +918,13 @@ handleCollisions = runAndLogIfErr "can't handle collisions" () $ do
     handleLandCollisions prims
 
 getNonPhantomPrims :: (Monad m) => WorldE m [(LSLKey,Prim)]
-getNonPhantomPrims = liftM (filter ((==0) . (.&. cStatusPhantom) . getI primStatus . snd) . M.assocs) (getM wprims)
+getNonPhantomPrims = fmap (filter ((==0) . (.&. cStatusPhantom) . getI primStatus . snd) . M.assocs) (getM wprims)
 
 handleTargets :: Monad m => WorldE m ()
 handleTargets = do
     t:*t0 <- getM (tick.*worldTargetCheckTime)
     when (t - t0 > durationToTicks 0.1) $
-        liftM M.keys (getM wobjects) >>= mapM_ (\ k ->
+        getM wobjects >>= mapM_ (\ k ->
             runErrPrim k () $ do
                 worldTargetCheckTime =: t
                 pos <- getGlobalPos k
@@ -952,7 +949,7 @@ handleTargets = do
                             )
                     )
 
-            )
+            ) . M.keys
 
 simulate :: Monad m => WorldE m ()
 simulate =
@@ -1121,7 +1118,7 @@ userTouchEventDef =
                         -- should we pass touches?
                         prim <- getM $ wprim pk
                         linkNum <- getPrimLinkNum pk
-                        needstouches <- liftM or $ mapM (primHasActiveHandler pk) ["touch","touch_start","touch_end"]
+                        needstouches <- or <$> mapM (primHasActiveHandler pk) ["touch","touch_start","touch_end"]
                         let touchList = [pk | needstouches] ++
                                         (if getI primPassTouches prim || not needstouches then maybe [] return (getI primParent prim) else [])
                         mapM_ (doTouch linkNum) touchList
@@ -1129,7 +1126,7 @@ userTouchEventDef =
                             putWorldEvent 0 (mkTouchStartEvent k "1" ak linkNum)
                             let tdur = floor (1000 * duration)
                             let tTimes = map ((/1000.0) . fromIntegral) [1,(1 + 500) .. tdur]
-                            mapM_ (flip putWorldEvent (mkTouchEvent pk "1" ak linkNum)) tTimes
+                            mapM_ (`putWorldEvent` mkTouchEvent pk "1" ak linkNum) tTimes
                             putWorldEvent duration (mkTouchEndEvent pk "1" ak linkNum)
                 f name _ = logAMessage LogWarn "sim" ("invalid event activation: " ++ name)
             in f
@@ -1178,20 +1175,20 @@ lslEventDescriptorToSimInputDef (name, params, delivery, additionalData, descrip
                EventDeliveryRoot -> [SimParam "Object Key" "key of object to deliver to" SimParamRootPrim]
                EventDeliveryPrim -> [SimParam "Prim Key" "key of prim to deliver to" SimParamPrim]
                ) ++
-            flip map additionalData (\ d -> case d of
+            map (\case
                 EventAdditionalInts name description -> SimParam name description (SimParamLSLValue LLInteger)
                 EventAdditionalKeys name description -> SimParam name description SimParamKey
                 EventAdditionalAvatarKeys name description -> SimParam name description SimParamAvatar
-                EventAdditionalVectors name description -> SimParam name description (SimParamLSLValue LLVector)) ++
+                EventAdditionalVectors name description -> SimParam name description (SimParamLSLValue LLVector)) additionalData ++
             map ( \ (t,name) -> SimParam name "" (SimParamLSLValue t)) params,
         simInputEventHandler =
             let f _ list =
                     let lenAddl = length additionalData
                         (df,rest) = case (delivery,list) of
                                (EventDeliveryScript,SVal sn:KVal pk:vals) -> (\ e -> pushEvent e pk sn,vals)
-                               (EventDeliveryObject,KVal key:vals) -> (\ e -> pushEventToObject e key,vals)
-                               (EventDeliveryRoot, KVal key:vals) -> ((\ e -> pushEventToPrim e key), vals)
-                               (EventDeliveryPrim, KVal key:vals) -> ((\ e -> pushEventToPrim e key), vals)
+                               (EventDeliveryObject,KVal key:vals) -> ((`pushEventToObject` key),vals)
+                               (EventDeliveryRoot, KVal key:vals) -> ((`pushEventToPrim` key), vals)
+                               (EventDeliveryPrim, KVal key:vals) -> ((`pushEventToPrim` key), vals)
                                _ -> (\ _ -> logAMessage LogWarn "sim" "invalid user event - bad script address",[])
                     in df (Event name (drop lenAddl rest) (M.fromList (zipWith mkInfo additionalData (take lenAddl rest))) )
                        where mkInfo (EventAdditionalVectors _ _) val = ("vector_0",val)

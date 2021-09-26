@@ -3,24 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: HaXml-1.25.5@sha256:5052e2fc3237aa005378ae85eff3e178cd0e85cd55d1da4ac99486a52ab53209,4449
-    pantry-tree:
-      size: 4076
-      sha256: 5bb3b0ee71a97d0c1fee873f9a67475037dd98729e11776e0e005d7c3d9d41e0
-  original:
-    hackage: HaXml-1.25.5
-- completed:
-    hackage: polyparse-1.13@sha256:d43dc209be86cbc7eb5cb98cd80ad36c8b035397e9dd200f669b19d20f37b8d8,2740
-    pantry-tree:
-      size: 1776
-      sha256: d1de3fcf2c5ecbbc450cb2b80a3adff929b5c50aa3248e8ab5c8b087919a476a
-  original:
-    hackage: polyparse-1.13
+packages: []
 snapshots:
 - completed:
-    size: 509471
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/12/26.yaml
-    sha256: 95f014df58d0679b1c4a2b7bf2b652b61da8d30de5f571abb0d59015ef678646
-  original: lts-12.26
+    size: 524996
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/27.yaml
+    sha256: 7ea31a280c56bf36ff591a7397cc384d0dff622e7f9e4225b47d8980f019a0f0
+  original: lts-14.27

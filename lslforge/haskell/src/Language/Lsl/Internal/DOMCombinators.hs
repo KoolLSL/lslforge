@@ -1,4 +1,6 @@
-{-# OPTIONS_GHC -XNoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE LambdaCase #-}
 module Language.Lsl.Internal.DOMCombinators where
 
 import Control.Monad.State
@@ -9,6 +11,7 @@ import Language.Lsl.Internal.DOMProcessing
 import Text.XML.HaXml(Attribute,AttValue(..),Document(..),Element(..),Content(..),Reference(..),xmlParse,info)
 import Text.XML.HaXml.Posn(Posn(..),noPos)
 import Language.Lsl.Internal.Util(readM)
+import Data.Functor ( (<&>) )
 
 type ContentAcceptor a = [Content Posn] -> Either String a
 type ContentFinder a = StateT [Content Posn] (Either String) a
@@ -35,23 +38,23 @@ elWith tag f af cf p (Elem name attrs cs) | tag /= unqualifiedQName name = Right
                                                            cv <- cf cs
                                                            return (Just (f av cv))
 
-liftElemTester :: (Posn -> (Element Posn) -> Either String (Maybe a)) -> (Content Posn -> Either String (Maybe a))
+liftElemTester :: (Posn -> Element Posn -> Either String (Maybe a)) -> (Content Posn -> Either String (Maybe a))
 liftElemTester ef (CElem e pos) = case ef pos e of
     Left s -> Left ("at " ++ show pos ++ ": " ++ s)
     Right v -> Right v
 
 canHaveElem :: ElementTester a -> ContentFinder (Maybe a)
 canHaveElem ef = get >>= \ cs ->
-        mapM (\ c -> (lift . liftElemTester ef) c >>= return . (,) c) [ e | e@(CElem _ _) <- cs ]
+        mapM (\ c -> (lift . liftElemTester ef) c <&> (,) c) [ e | e@(CElem _ _) <- cs ]
         >>= (\ vs -> case span (isNothing . snd) vs of
     (bs,[]) -> put (map fst bs) >> return Nothing
     (bs,c:cs) -> put (map fst (bs ++ cs)) >> return (snd c))
 
 mustHaveElem :: ElementTester a -> ContentFinder a
 mustHaveElem ef = get >>= \ cs ->
-        mapM (\ c -> (lift . liftElemTester ef) c >>= return . (,) c) [ e | e@(CElem _ _) <- cs ]
+        mapM (\ c -> (lift . liftElemTester ef) c <&> (,) c) [ e | e@(CElem _ _) <- cs ]
         >>= (\ vs -> case span (isNothing . snd) vs of
-    (bs,[]) -> throwError ("element not found")
+    (bs,[]) -> throwError "element not found"
     (bs,c:cs) -> put (map fst (bs ++ cs)) >> return (fromJust $ snd c))
 
 mustHave :: String -> ContentAcceptor a -> ContentFinder a
@@ -70,7 +73,7 @@ many et cs = case runStateT go cs of
         Left s -> throwError ("many: " ++ s)
         Right (v,cs') -> empty cs' >> return v
     where go = do
-            isEmpty <- get >>= return . null
+            isEmpty <- get <&> null
             if isEmpty then return []
                        else do
                            v <- mustHaveElem et
@@ -88,9 +91,9 @@ attrIs k v _ (nm,attv) | v == attContent attv  && k == unqualifiedQName nm = ret
                        | otherwise = return Nothing
 
 hasAttr :: AttributeTester a -> AttributeFinder (Maybe a)
-hasAttr at = get >>= \ (pos,attrs) -> mapM (lift . at pos) attrs >>= return . zip attrs >>= (\ ps -> case span (isNothing . snd) ps of
+hasAttr at = get >>= \ (pos,attrs) -> mapM (lift . at pos) attrs >>= (\ ps -> case span (isNothing . snd) ps of
     (bs,[]) -> return Nothing
-    (bs,c:cs) -> put (pos,map fst (bs ++ cs)) >> return (snd c))
+    (bs,c:cs) -> put (pos,map fst (bs ++ cs)) >> return (snd c)) . zip attrs
 
 thisAttr :: String -> String -> AttributesTester ()
 thisAttr k v p atts = case runStateT (hasAttr (attrIs k v)) (p,atts) of
@@ -113,7 +116,7 @@ nope _ _ = return Nothing
 choice :: [ElementTester a] -> ElementTester a
 choice = foldl (<|>) nope
 
-boolContent cs = simpleContent cs >>= (\ v -> case v of
+boolContent cs = simpleContent cs >>= (\case
     "true" -> Right True
     "false" -> Right False
     s -> Left ("unrecognized bool " ++ s))
@@ -129,12 +132,12 @@ refEntityString "apos" = "'"
 refEntityString _ = "?"
 
 simpleContent :: ContentAcceptor String
-simpleContent cs = mapM processContentItem cs >>= return . concat
+simpleContent cs = mapM processContentItem cs <&> concat
     where
         processContentItem (CElem (Elem name _ _) _) = Left ("unexpected content element (" ++ show name ++ ")")
         processContentItem (CString _ s _) = Right s
         processContentItem (CRef (RefEntity s) _) = Right $ refEntityString s
-        processContentItem (CRef (RefChar i) _) = Right $ [toEnum i]
+        processContentItem (CRef (RefChar i) _) = Right [toEnum i]
         processContentItem (CMisc _ _) = Right "unexpected content"
 
 empty :: ContentAcceptor ()

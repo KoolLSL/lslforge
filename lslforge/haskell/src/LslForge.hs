@@ -19,7 +19,7 @@ usage progName = "Usage: " ++ progName ++ " [Version|MetaData|Compiler|Expressio
 main = do
     progName <- getProgName
     args <- getArgs
-    when (length args < 1) $ do
+    when (null args) $ do
         hPutStrLn stderr "Invalid number of command line arguments"
         hPutStrLn stderr (usage progName)
         exitFailure

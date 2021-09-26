@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.UnitTestEnv(
     simStep,
     simFunc,
@@ -16,7 +17,7 @@ import Control.Monad(liftM2)
 import Control.Monad.Except(ExceptT(..),runExceptT)
 import Control.Monad.State(MonadState(..),State(..),evalState,
     runState)
-import Data.List(find,intersperse)
+import Data.List(find, intercalate)
 import Data.Maybe(isJust)
 import Language.Lsl.Internal.Breakpoint(
     Breakpoint,BreakpointManager,checkBreakpoint,emptyBreakpointManager,
@@ -38,6 +39,7 @@ import Language.Lsl.UnitTest(
     EntryPoint(..),LSLUnitTest(..),ExpectationMode(..),
     FuncCallExpectations(..),expectedReturns,removeExpectation)
 import Language.Lsl.Internal.Util(LSLInteger,findM,ctx)
+import Data.Functor ((<&>))
 
 --trace1 v = trace ("->>" ++ (show v)) v
 
@@ -53,19 +55,19 @@ data SimpleWorld a = SimpleWorld {
 
 type SimpleWorldM a = ExceptT String (State (SimpleWorld a))
 getTick :: SimpleWorldM a LSLInteger
-getTick = get >>= return . tick
+getTick = get <&> tick
 getMaxTick :: SimpleWorldM a LSLInteger
-getMaxTick = get >>= return . maxTick
+getMaxTick = get <&> maxTick
 getMsgLog :: SimpleWorldM a [(LSLInteger,String)]
-getMsgLog = get >>= return . msgLog
+getMsgLog = get <&> msgLog
 getWScripts :: SimpleWorldM a [(String, Validity CompiledLSLScript)]
-getWScripts = get >>= return . wScripts
+getWScripts = get <&> wScripts
 getWLibrary :: SimpleWorldM a [(String, Validity LModule)]
-getWLibrary = get >>= return . wLibrary
+getWLibrary = get <&> wLibrary
 getExpectations :: SimpleWorldM a (FuncCallExpectations a)
-getExpectations = get >>= return . expectations
+getExpectations = get <&> expectations
 getBreakpointManager :: SimpleWorldM a BreakpointManager
-getBreakpointManager = get >>= return . breakpointManager
+getBreakpointManager = get <&> breakpointManager
 
 setTick t = get >>= \ w -> put (w { tick = t })
 setMsgLog l = get >>= \ w -> put (w { msgLog = l })
@@ -110,7 +112,7 @@ doPredef n i a = do
 
 mkScript (LModule globdefs vars) =
     LSLScript "" (varsToGlobdefs ++ globdefs) [nullCtx $ L.State (nullCtx "default") []]
-    where varsToGlobdefs = map (\ v -> GV v Nothing) vars
+    where varsToGlobdefs = map (`GV` Nothing) vars
 
 getValidScript name =
     do  scripts <- getWScripts
@@ -160,10 +162,10 @@ checkResults (ms1, val, globs, w) unitTest =
     let name = unitTestName unitTest
         ms0 = expectedNewState unitTest
         expectedR = expectedReturn unitTest in
-        if ((expectationMode $ expectations w) `elem` [Strict,Exhaust]) &&
-           (not (null (callList $ expectations w))) then
+        if (expectationMode (expectations w) `elem` [Strict,Exhaust]) &&
+           not (null (callList $ expectations w)) then
              FailureResult name ("some expected function calls not made: " ++
-                 concat (intersperse ", " $ map (fst.fst) $ callList $ expectations w))
+                 intercalate ", " (map (fst.fst) $ callList $ expectations w))
                  (msgLog w)
         else case (ms0, ms1) of
           (Nothing, Just st) ->
@@ -174,22 +176,22 @@ checkResults (ms1, val, globs, w) unitTest =
                                          FailureResult name ("expected state change to " ++ s0 ++
                                                              ", but acutally changed to " ++ s1) (msgLog w)
                              | otherwise ->
-              if expectedR /= Nothing && expectedR /=  Just val then
+              if isJust expectedR && expectedR /=  Just val then
                   let (Just val') = expectedR in
-                      FailureResult name ("expected return value was " ++ (lslValString val') ++
-                                          ", but actually was " ++ (lslValString val)) (msgLog w)
+                      FailureResult name ("expected return value was " ++ lslValString val' ++
+                                          ", but actually was " ++ lslValString val) (msgLog w)
               else
                   case find (`notElem` globs) (expectedGlobalVals unitTest) of
                       Just (globname,val) ->
                           case lookup globname globs of
                               Nothing ->
                                   FailureResult name ("expected global " ++ globname ++ " to have final value of " ++
-                                                (lslValString val) ++ ", but no such global was found")
+                                                lslValString val ++ ", but no such global was found")
                                                 (msgLog w)
                               Just val' ->
                                   FailureResult name ("expected global " ++ globname ++ " to have final value of " ++
-                                                (lslValString val) ++ ", but actually had value of " ++
-                                                (lslValString val')) (msgLog w)
+                                                lslValString val ++ ", but actually had value of " ++
+                                                lslValString val') (msgLog w)
                       Nothing -> SuccessResult name (msgLog w)
 
 --------------------------------------------------
@@ -267,16 +269,16 @@ simFunc lib (moduleName,functionName) globs args =
        Left s -> Left s
        Right (script,path) -> simSFunc (script,path) globs args
 
-simSome exec world = runState (runExceptT (
+simSome exec = runState (runExceptT (
     do maxTick <- getMaxTick
-       (runEval $ evalSimple maxTick) exec)) world
+       (runEval $ evalSimple maxTick) exec))
 
 -- no more tests, not currently executing
 simStep _ _ ([], Nothing) _ = (AllComplete,([],Nothing))
 --  not currently executing, more tests
 simStep scripts lib (unitTest:tests, Nothing) command =
     let world = (SimpleWorld { maxTick = 10000, tick = 0, msgLog = [],
-                               wScripts = scripts, wLibrary = lib, expectations = (expectedCalls unitTest),
+                               wScripts = scripts, wLibrary = lib, expectations = expectedCalls unitTest,
                                breakpointManager = emptyBreakpointManager})
         ep = entryPoint unitTest
         globs = initialGlobs unitTest

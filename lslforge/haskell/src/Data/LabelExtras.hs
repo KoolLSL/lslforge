@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell, TypeOperators, NoMonomorphismRestriction #-}
 {-# LANGUAGE  FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Data.LabelExtras(
     lm,
     lmi,
@@ -50,7 +51,7 @@ liftML l = lens getter modifier where
 -- | a lens for a Map element
 lm :: (MonadError String m, Show k, Ord k) => k -> m (Map k v) :-> m v
 lm k = lens getter modifier where
-    getter mm = mm >>= (maybe (throwError $ err k)  return) . lookup k
+    getter mm = mm >>= maybe (throwError $ err k)  return . lookup k
     modifier f mm = do
         v <- f $ getter mm
         insert k v <$> mm
@@ -58,7 +59,7 @@ lm k = lens getter modifier where
 
 lmi :: MonadError String m => Int -> m (IM.IntMap v) :-> m v
 lmi i = lens getter modifier where
-    getter mm = mm >>= (maybe (throwError $ err i)  return) . IM.lookup i
+    getter mm = mm >>= maybe (throwError $ err i)  return . IM.lookup i
     modifier f mm = do
         v <- f $ getter mm
         IM.insert i v <$> mm
@@ -66,7 +67,7 @@ lmi i = lens getter modifier where
 
 lli :: MonadError String m => Int -> m [v] :-> m v
 lli i = lens getter modifier where
-    getter ml = ml >>= (maybe (throwError $ err i)  return) . safeIndex i
+    getter ml = ml >>= maybe (throwError $ err i)  return . safeIndex i
     modifier f ml = do
         v <- f $ getter ml
         ml >>= \l -> maybe (throwError $ err i) return $ replace i l v
@@ -85,7 +86,7 @@ setM :: MonadState s m => m s :-> m b -> b -> m ()
 setM l v = set l (return v) SM.get >>= SM.put
 
 modM_ :: MonadState s m => m s :-> m b -> (b -> b) -> m ()
-modM_ l f = modify l (liftM f) SM.get >>= SM.put
+modM_ l f = modify l (fmap f) SM.get >>= SM.put
 
 modM :: MonadState s m => m s :-> m b -> (b -> b) -> m b
 modM l f = do
@@ -103,7 +104,7 @@ mkLabelsAlt names = do
     decs2 <- mapM liftDec decs
     return (map change decs ++ decs2)
     where liftDec (FunD nm _) = funD (mkName (nameBase nm))
-              [clause [] (normalB $ (appE (varE 'liftML) (varE (mkName $ nameBase nm ++ "U")))) []]
+              [clause [] (normalB $ appE (varE 'liftML) (varE (mkName $ nameBase nm ++ "U"))) []]
           change (FunD nm x) = FunD (mkName (nameBase nm ++ "U")) x
           isFuncDec (FunD _ _) = True
           isFuncDec _          = False
@@ -124,19 +125,19 @@ l3rd3U :: (a,b,c) :-> c
 l3rd3U = lens (\(_,_,z) -> z) (\f (x,y,z) -> (x,y,f z))
 
 lfst :: Monad m => m (a,b) :-> m a
-lfst = liftML $ lfstU
+lfst = liftML lfstU
 
 lsnd :: Monad m => m (a,b) :-> m b
-lsnd = liftML $ lsndU
+lsnd = liftML lsndU
 
 lfst3 :: Monad m => m (a,b,c) :-> m a
-lfst3 = liftML $ lfst3U
+lfst3 = liftML lfst3U
 
 lsnd3 :: Monad m => m (a,b,c) :-> m b
-lsnd3 = liftML $ lsnd3U
+lsnd3 = liftML lsnd3U
 
 l3rd3 :: Monad m => m (a,b,c) :-> m c
-l3rd3 = liftML $ l3rd3U
+l3rd3 = liftML l3rd3U
 
 getI :: Identity a :-> Identity b -> a -> b
 getI l = runIdentity . get l . return
@@ -145,7 +146,7 @@ setI :: Identity a :-> Identity b -> b -> a -> a
 setI l b a = runIdentity $ set l (return b) (return a)
 
 modI :: Identity a :-> Identity b -> (b -> b) -> a -> a
-modI l f v = runIdentity $ modify l (liftM f) (return v)
+modI l f v = runIdentity $ modify l (fmap f) (return v)
 
 infixr 6 :*
 
@@ -155,7 +156,7 @@ infixr 6 .*
 
 (.*) :: Monad m => m a :-> m b -> m a :-> m c -> m a :-> m (b :* c)
 (.*) l1 l2 = lens getter modifier where
-    getter ma = (:*) `liftM` get l1 ma `ap` get l2 ma
+    getter ma = (:*) `fmap` get l1 ma `ap` get l2 ma
     modifier f ma = f (getter ma) >>=
                     \(b:*c) -> set l1 (return b) . set l2 (return c) $ ma
 
@@ -167,13 +168,13 @@ infixr 6 .*
 (.?) l1 l2 = lens getter modifier where
     getter ma = do
         b <- get l2 ma
-        (Just `liftM` get l1 (return b)) `catchError` const (return Nothing)
+        (Just `fmap` get l1 (return b)) `catchError` const (return Nothing)
     modifier g ma = do
         b <- get l2 ma
         mc <- g (Just <$> (get l1 . get l2 $ ma))
         maybe ma (f b) mc
         where f b c = do
-                  b <- (Just `liftM` (set l1 (return c) (return b)))
+                  b <- (Just `fmap` set l1 (return c) (return b))
                        `catchError` const (return Nothing)
                   maybe ma (flip (set l2) ma . return) b
 

@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-12.26
+resolver: lts-14.27
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,9 +40,7 @@ packages:
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps:
-- HaXml-1.25.5
-- polyparse-1.13
+extra-deps: []
 #  - git: https://github.com/ki11men0w/HaXml-1.23.5.git
 #    commit: 42349f1fa3ab5aa7051b3dbc3bec2d2b28ab5933
 

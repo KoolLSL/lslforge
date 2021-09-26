@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XQuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Language.Lsl.Internal.BuiltInModules(avEventGen) where
 
 import Language.Lsl.QQ(lslm)

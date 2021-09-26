@@ -48,9 +48,8 @@ callArgsE = liste "maybe-value" maybeV
 bindingsE = liste "globalBinding" globalBindingE
 globalBindingE = (,) <$> req "name" text <*> req "value" someV
 
-evalE typ = evaluateExpression typ <$> text >>= maybe
-    (throwError ("invalid content for " ++ show typ))
-    return
+evalE typ = text >>= maybe (throwError ("invalid content for " ++ show typ))
+    return . evaluateExpression typ
 
 lslValTypes = [
     ("lsl-string",evalE LLString),

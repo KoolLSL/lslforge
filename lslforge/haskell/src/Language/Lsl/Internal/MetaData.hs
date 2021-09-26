@@ -10,7 +10,7 @@ import Language.Lsl.Internal.Type(LSLValue(..),LSLType(..),lslTypeString,lslValS
 import qualified Language.Lsl.Internal.XmlCreate as X
 
 emit t = X.emit t []
-emitSimple t s = X.emitSimple t [] s
+emitSimple t = X.emitSimple t []
 
 -- this is the main function...
 printMeta = putStr buildMeta
@@ -38,10 +38,10 @@ functions =
 emitFunction (name,rtype,params,description) =
     emit "function" [
         emitSimple "name" name,
-        emitSimple "returns" (if (rtype == LLVoid) then "" else lslTypeString rtype),
+        emitSimple "returns" (if rtype == LLVoid then "" else lslTypeString rtype),
         emitParams params,
         emitSimple "description" description,
-        emitSimple "stateless" (if (name `elem` internalLLFuncNames) then "true" else "false")]
+        emitSimple "stateless" (if name `elem` internalLLFuncNames then "true" else "false")]
 
 constants =
     emit "constants" (map emitConstant allConstants)
@@ -51,9 +51,9 @@ emitConstant (Constant name value) =
         emitSimple "name" name,
         emitSimple "type" (lslTypeString $ typeOfLSLValue value),
         emitSimple "value" $ case value of
-            SVal s -> (show s)
-            KVal k -> (show k)
-            VVal x y z -> ("&lt;" ++ show x ++ "," ++ show y ++ "," ++ show z ++ "&gt;")
-            RVal x y z s -> ("&lt;" ++ show x ++ "," ++ show y ++ "," ++ show z ++ "," ++ show s ++ "&gt;")
+            SVal s -> show s
+            KVal k -> show k
+            VVal x y z -> "&lt;" ++ show x ++ "," ++ show y ++ "," ++ show z ++ "&gt;"
+            RVal x y z s -> "&lt;" ++ show x ++ "," ++ show y ++ "," ++ show z ++ "," ++ show s ++ "&gt;"
             _ -> lslValString value,
         emitSimple "description" "no description"]

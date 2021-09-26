@@ -35,7 +35,7 @@ otherMassSimple = sphMassSimple
 -- perimeter of an ellipse = pi * (a + b) * (1 + 3 * h / (10 + sqrt (4 - 3 * h))) where h = (a - b)^2 / (a + b)^2
 
 primMassApprox :: Prim -> Float
-primMassApprox (Prim { _primScale = scale, _primTypeInfo = primType }) = primMassApprox' scale primType
+primMassApprox Prim { _primScale = scale, _primTypeInfo = primType } = primMassApprox' scale primType
 
 primMassApprox' :: (Float,Float,Float) -> PrimType -> Float
 primMassApprox' scale primType =
@@ -62,8 +62,8 @@ kin t0 t1 t2d zoffs m p0 v0 f (i,ti) =
        limit (p@(x,y,z),v@(vx,vy,vz)) = if belowGround zoffs p then ((x,y,0),(vx,vy, if vz < 0 then 0 else vz)) else (p,v)
        d = t2d $ t1 - t0
        di = max 0 (min (t2d (ti - t0)) d)
-   in limit (p0 `add3d` (scale3d d v0) `add3d` (scale3d (d^2 / 2) accel) `add3d` (scale3d (di^2/2) accel1),
-             v0 `add3d` (scale3d d accel) `add3d` (scale3d di accel1))
+   in limit (p0 `add3d` scale3d d v0 `add3d` scale3d (d^2 / 2) accel `add3d` scale3d (di^2/2) accel1,
+             v0 `add3d` scale3d d accel `add3d` scale3d di accel1)
 
 calcAccel t zoffs m p f (i,ti) =
     let (x,y,z) = gravA `add3d` scale3d (1/m) f `add3d` (if ti < t then (0,0,0) else scale3d (1/m) i) in
@@ -88,24 +88,24 @@ rotDyn dt radius mass rot0 omega0 torque =
     let inertia = momentOfInertia mass radius
         angularAcceleration = scale3d (1/inertia) torque
         domega = scale3d dt angularAcceleration
-        drotV = (scale3d dt omega0) `add3d` (scale3d (dt^2/2) angularAcceleration)
+        drotV = scale3d dt omega0 `add3d` scale3d (dt^2/2) angularAcceleration
         drot = let mag = mag3d drotV in if mag == 0 then (0,0,0,1) else axisAngleToRotation  (norm3d drotV) mag
     in (rot0 `quaternionMultiply` drot, omega0 `add3d` domega)
 
 totalTorque t0 t1 t2d torques =
     let dt = t2d $ t1 - t0
-        torques' = map (\ (torque,tf) -> scale3d ((max 0 (min (t2d (tf - t0)) dt)) / dt) torque) torques
+        torques' = map (\ (torque,tf) -> scale3d (max 0 (min (t2d (tf - t0)) dt) / dt) torque) torques
     in foldl add3d (0,0,0) torques'
 
 checkIntersections toBB cmp objects = concat (go objects)
     where go [] = []
-          go (o:os) = [ pair o o' | (True,o') <- zip (map (bbIntersect (toBB o) . toBB ) os) os] : (go os)
+          go (o:os) = [ pair o o' | (True,o') <- zip (map (bbIntersect (toBB o) . toBB ) os) os] : go os
           pair o o' = if cmp o o' == LT then (o,o') else (o',o)
 
 dampZForce tau zt z0 m vz0 f = m * ((2 * (p - tau * vz0) / (tau^2)) - (gravC + f * m)) where p = zt - z0
 
 dampForce tau pt p0 m v0 f =
-    scale3d m ((scale3d (2/(tau^2)) (p `diff3d` (scale3d tau v0))) `diff3d` (gravA `add3d` (scale3d m f)))
+    scale3d m (scale3d (2/(tau^2)) (p `diff3d` scale3d tau v0) `diff3d` (gravA `add3d` scale3d m f))
     where p = pt `diff3d` p0
 
 -- I of sphere
@@ -115,8 +115,8 @@ momentOfInertia mass r = (2/5) * mass * r^2
 dampTorque tau strength rt r0 mass radius omega0 torque0 =
     let inertia = momentOfInertia mass radius
         r1 = let mag = mag3d omega0 in
-                 if mag == 0 then r0 else r0 `quaternionMultiply` (axisAngleToRotation (norm3d omega0) (mag*tau))
-        rotNeeded = ((invertQuaternion r1) `quaternionMultiply` rt)
+                 if mag == 0 then r0 else r0 `quaternionMultiply` axisAngleToRotation (norm3d omega0) (mag*tau)
+        rotNeeded = (invertQuaternion r1 `quaternionMultiply` rt)
         (axis,angle) = axisAngleFromRotation rotNeeded
         -- angle = tau^2 * ((1/inertia*2) * (torque + torque0))
     in scale3d (angle * 2 * inertia / (tau^2)) axis `diff3d` torque0
@@ -127,6 +127,6 @@ iterativeDampingZ m z v zt tau dt = let f = dampZForce tau zt z m v 0
     ((z',v',f) : iterativeDampingZ m z' v' zt tau dt)
 
 iterativeDamping m p v pt tau dt = let f = dampForce tau pt p m v (0,0,0)
-                                       p' = p `add3d` (scale3d dt v)
-                                       v' = v `add3d` (scale3d (dt/m) f) in
+                                       p' = p `add3d` scale3d dt v
+                                       v' = v `add3d` scale3d (dt/m) f in
     ((p',v',f) : iterativeDamping m p' v' pt tau dt)

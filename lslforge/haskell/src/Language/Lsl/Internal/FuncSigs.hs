@@ -11,7 +11,7 @@ import Language.Lsl.Internal.Type(LSLType(..), convertValues,LSLValue)
 -- TODO: import real info into funcMeta, and derive funcSigs from that
 funcMeta :: [(String,LSLType,[(String,LSLType)],String)]
 funcMeta =
-    let dummyNames = zipWith (++) (repeat "arg") (map show [1..])
+    let dummyNames = map ((++) "arg" . show) [1..]
         sig2Meta (name,rt,args) =
             let (argNames,description) = case lookup name funcDescriptions of
                     Nothing -> (dummyNames,"no description")

@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.ExpressionHandler(validateExpression,evaluateExpression) where
 
 import Control.Monad.Except
@@ -42,14 +43,14 @@ validPrimitiveExpr (VecExpr x y z) = do
      t0 <- validPrimitiveCtxExpr x
      t1 <- validPrimitiveCtxExpr y
      t2 <- validPrimitiveCtxExpr z
-     when (not (all (`elem` [LLInteger,LLFloat]) [t0,t1,t2])) $ fail "vector expression must contain only integer or float components"
+     unless (all (`elem` [LLInteger,LLFloat]) [t0,t1,t2]) $ fail "vector expression must contain only integer or float components"
      return LLVector
 validPrimitiveExpr (RotExpr x y z s) = do
      t0 <- validPrimitiveCtxExpr x
      t1 <- validPrimitiveCtxExpr y
      t2 <- validPrimitiveCtxExpr z
      t3 <- validPrimitiveCtxExpr s
-     when (not (all (`elem` [LLInteger,LLFloat]) [t0,t1,t2,t3])) $ fail "vector expression must contain only integer or float components"
+     unless (all (`elem` [LLInteger,LLFloat]) [t0,t1,t2,t3]) $ fail "vector expression must contain only integer or float components"
      return LLRot
 validPrimitiveExpr (ListExpr l) = do
     ts <- mapM validPrimitiveCtxExpr l
@@ -123,7 +124,7 @@ validPrimitiveExpr (Gt e0 e1) = validRelExpr e0 e1
 validPrimitiveExpr (Ge e0 e1) = validRelExpr e0 e1
 validPrimitiveExpr (Cast t e) = do
     t' <- validPrimitiveCtxExpr e
-    when (not $ isCastValid t' t) $ fail "invalid cast"
+    unless (isCastValid t' t) $ fail "invalid cast"
     return t
 validPrimitiveExpr expr = fail "expression not valid in this context"
 
@@ -250,11 +251,11 @@ evalExpr (Mul e0 e1) =
             (IVal i1,FVal f2) -> return $ FVal (fromInt i1 * f2)
             (FVal f1,IVal i2) -> return $ FVal (f1 * fromInt i2)
             (FVal f1,FVal f2) -> return $ FVal (f1 * f2)
-            (v@(VVal _ _ _),IVal i) -> let f = fromInt i in return $ vecMulScalar v f
-            (v@(VVal _ _ _),FVal f) -> return $ vecMulScalar v f
-            ((VVal x1 y1 z1),(VVal x2 y2 z2)) -> return $ FVal $ x1 * x2 + y1 * y2 + z1 * z2
-            (v@(VVal _ _ _),r@(RVal _ _ _ _)) -> return $ rotMulVec r v
-            (r1@(RVal _ _ _ _),r2@(RVal _ _ _ _)) -> return $ rotMul r1 r2
+            (v@VVal {},IVal i) -> let f = fromInt i in return $ vecMulScalar v f
+            (v@VVal {},FVal f) -> return $ vecMulScalar v f
+            (VVal x1 y1 z1,VVal x2 y2 z2) -> return $ FVal $ x1 * x2 + y1 * y2 + z1 * z2
+            (v@VVal {},r@RVal {}) -> return $ rotMulVec r v
+            (r1@RVal {},r2@RVal {}) -> return $ rotMul r1 r2
             _ -> fail "incompatible operands"
 evalExpr (Div e0 e1) =
     do (v0,v1) <- evalEach e0 e1
@@ -263,16 +264,16 @@ evalExpr (Div e0 e1) =
             (IVal i1,FVal f2) -> return $ FVal (fromInt i1 / f2)
             (FVal f1,IVal i2) -> return $ FVal (f1 / fromInt i2)
             (FVal f1,FVal f2) -> return $ FVal (f1/f2)
-            (v@(VVal _ _ _),IVal i) -> let f = 1.0 / fromInt i in return $ vecMulScalar v f
-            (v@(VVal _ _ _),FVal f) -> return $ vecMulScalar v f
-            (v@(VVal _ _ _),r@(RVal _ _ _ _)) -> return $ rotMulVec (invRot r) v
-            (r1@(RVal _ _ _ _),r2@(RVal _ _ _ _)) -> return $ rotMul r1 $ invRot r2
+            (v@VVal {},IVal i) -> let f = 1.0 / fromInt i in return $ vecMulScalar v f
+            (v@VVal {},FVal f) -> return $ vecMulScalar v f
+            (v@VVal {},r@RVal {}) -> return $ rotMulVec (invRot r) v
+            (r1@RVal {},r2@RVal {}) -> return $ rotMul r1 $ invRot r2
             _ -> fail "incompatible operands"
 evalExpr (Mod e0 e1) =
     do (v0,v1) <- evalEach e0 e1
        case (v0,v1) of
            (IVal i1,IVal i2) -> return $ IVal (i1 `mod` i2)
-           (v1@(VVal _ _ _),v2@(VVal _ _ _)) ->return $ v1 `vcross` v2
+           (v1@VVal {},v2@VVal {}) ->return $ v1 `vcross` v2
            _ -> fail "incompatible operands"
 evalExpr (BAnd e0 e1) = evalIntExpr (.&.) e0 e1
 evalExpr (BOr e0 e1) = evalIntExpr (.|.) e0 e1
@@ -305,8 +306,8 @@ evalExpr (Cast t e) = do
        (LLList,SVal s) -> return $ LVal [SVal s]
        (LLKey,SVal s) -> return $ KVal $ LSLKey s
        (LLKey,KVal s) -> return $ KVal s
-       (LLVector, (VVal _ _ _)) -> return v
-       (LLRot, (RVal _ _ _ _)) -> return v
+       (LLVector, VVal {}) -> return v
+       (LLRot, RVal {}) -> return v
        (LLList, LVal l) -> return v
        _ -> fail "invalid cast!"
 
@@ -345,9 +346,9 @@ extractExpressionFromXML s = either error id $ xmlAccept expression s
 expression = tag "expression" >> (,) <$> req "type" text <*> req "text" text
 
 expressionValidatorEmitter (Left s) =
-    (emit "result" [ emit "ok" [showString "false"], emit "msg" [showString $ xmlEscape s]]) ""
+    emit "result" [ emit "ok" [showString "false"], emit "msg" [showString $ xmlEscape s]] ""
 expressionValidatorEmitter (Right _) =
-    (emit "result" [ emit "ok" [showString "true"]]) ""
+    emit "result" [ emit "ok" [showString "true"]] ""
 
 validateExpression hIn hOut =
     do input <- hGetContents hIn

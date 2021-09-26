@@ -1,5 +1,11 @@
-{-# OPTIONS_GHC -XDeriveDataTypeable -XTypeSynonymInstances -XFlexibleContexts -XGeneralizedNewtypeDeriving
-                -XTemplateHaskell -XNoMonomorphismRestriction -XFlexibleInstances #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE LambdaCase #-}
 -- | Defines the abstract syntax tree for LSL (and LSL Plus extensions).
 module Language.Lsl.Syntax (
     -- Types
@@ -66,13 +72,15 @@ import Data.Generics
 import Data.Data(Data,Typeable)
 import Data.List(find,sort,sortBy,nub,nubBy,deleteFirstsBy)
 import qualified Data.Map as M
-import Data.Maybe(isJust,isNothing,mapMaybe)
+import Data.Maybe(isJust,isNothing,mapMaybe, fromMaybe, catMaybes)
 import Language.Lsl.Internal.Util(LSLInteger,ctx,findM,lookupM,filtMap)
 import Control.Monad(when,MonadPlus(..))
 import Control.Monad.Except(MonadError(..))
 import Control.Monad.Outdated.Error(Error(..))
 import qualified Control.Monad.State as S(State)
 import Control.Monad.State hiding(State)
+import Data.Functor ((<&>))
+import Data.Bifunctor (second)
 
 -- import Debug.Trace
 --trace1 s v = trace (s ++ show v) v
@@ -82,7 +90,7 @@ data TextLocation = TextLocation { textLine0 :: Int, textColumn0 :: Int, textLin
 data SourceContext = SourceContext { srcTextLocation :: TextLocation, srcPreText :: String, srcPostTxt :: String, srcPragmas :: [Pragma] }
                      deriving (Show,Typeable,Data)
 
-isTextLocation (Just (TextLocation _ _ _ _ _)) = True
+isTextLocation (Just TextLocation {}) = True
 isTextLocation _ = False
 
 rmCtx :: Data a => a -> a
@@ -93,7 +101,7 @@ rmCtx = everywhere (mkT doNullify)
 -- | A wrapper that can associate a source code context with a value (e.g. a syntax value).
 data Ctx a = Ctx { srcCtx :: Maybe SourceContext, ctxItem :: a } deriving (Show,Typeable,Data)
 instance Functor Ctx where
-    fmap f (Ctx c v) = (Ctx c $ f v)
+    fmap f (Ctx c v) = Ctx c $ f v
 
 ctxItems = map ctxItem
 
@@ -188,7 +196,7 @@ data Expr = IntLit LSLInteger
 data Statement = Compound [CtxStmt]
                | While CtxExpr CtxStmt
                | DoWhile CtxStmt CtxExpr
-               | For ([CtxExpr]) (Maybe CtxExpr) ([CtxExpr]) CtxStmt
+               | For [CtxExpr] (Maybe CtxExpr) [CtxExpr] CtxStmt
                | If CtxExpr CtxStmt CtxStmt
                | Decl Var (Maybe CtxExpr)
                | NullStmt
@@ -248,7 +256,7 @@ predefFuncs = map lslFunc funcSigs
 findVar name = find (\(Var n _ ) -> n == name)
 findType name =
     let f Nothing = Nothing
-        f (Just (Var _ t )) = Just t in f . (findVar name)
+        f (Just (Var _ t )) = Just t in f . findVar name
 findFuncDec name = ctx ("finding function " ++ name) . findM (\ fd -> ctxItem (funcName fd) == name)
 findState name = ctx ("finding state " ++ name) . findM (\ (State n _) -> ctxItem n == name)
 findFunc name = ctx ("finding function " ++ name) . findM (\ (Func fd _) -> ctxItem (funcName fd) == name)
@@ -280,7 +288,7 @@ throwStrError :: String -> Validity a
 throwStrError s = throwError $ CodeErrs [(Nothing,s)]
 
 matchTypes LLFloat LLInteger = True
-matchTypes dest src = dest == src || (all (`elem` [LLKey,LLString]) [dest,src])
+matchTypes dest src = dest == src || all (`elem` [LLKey,LLString]) [dest,src]
 
 data CompiledLSLScript = CompiledLSLScript {
     scriptComment :: !String,
@@ -352,7 +360,7 @@ $(genMAccessorsForType ''ValidationState) -- a Template Haskell splice...
 type VState a = S.State ValidationState a
 
 --vsmRegisterGlobal :: Ctx Var -> VState ()
-vsmRegisterGlobalName name ctx = get'vsGlobalRegistry >>= put'vsGlobalRegistry . (M.insert name ctx)
+vsmRegisterGlobalName name ctx = get'vsGlobalRegistry >>= put'vsGlobalRegistry . M.insert name ctx
 vsmRegisterGlobal (Ctx ctx (Var name t)) = vsmRegisterGlobalName name ctx
 vsmRegisterFunc (Func (FuncDec (Ctx ctx name) _ _) _) = vsmRegisterGlobalName name ctx
 
@@ -403,7 +411,7 @@ vsmAddLocal ctx v@(Var name _) = do
     case locals of
         [] -> error "internal error - no local scope"
         (top:rest) ->
-            if (defined name $ concat locals) || (isConstant name)
+            if defined name (concat locals) || isConstant name
                 then vsmAddErr (ctx, name ++ " is already defined")
                 else do
                     put'vsLocalVars ((v:top):rest)
@@ -430,9 +438,9 @@ vsmWithModule mname action = get'vsModules >>= put'vsModules . (mname:) >> actio
 
 vsmAddErr :: CodeErr -> VState ()
 vsmAddErr err = do
-    ctx <- get'vsContext >>= return . safeHead
+    ctx <- get'vsContext <&> safeHead
     CodeErrs errs <- get'vsErr
-    put'vsErr $ CodeErrs ((maybe (ctxFromCodeErr err) id ctx, msgFromCodeErr err) : errs)
+    put'vsErr $ CodeErrs ((fromMaybe (ctxFromCodeErr err) ctx, msgFromCodeErr err) : errs)
 
 vsmAddErrs :: CodeErrs -> VState ()
 vsmAddErrs = mapM_ vsmAddErr . codeErrs
@@ -554,7 +562,7 @@ compileGlob (GV v mexpr) = do
     whenJust mexpr $ \ expr -> do
        let (_,gvs') = break (\ var -> varName var == varName v') gvs
        mt <- compileCtxSimple (drop 1 gvs') expr
-       whenJust mt $ \ t -> when (not (varType v' `matchTypes` t)) (vsmAddErr (srcCtx v, "expression not of the correct type"))
+       whenJust mt $ \ t -> unless (varType v' `matchTypes` t) (vsmAddErr (srcCtx v, "expression not of the correct type"))
     vsmRegisterGlobal v
     vsmAddToNamesUsed (varName v')
     vsmAddGlobal (GDecl v (fmap ctxItem mexpr))
@@ -562,7 +570,7 @@ compileGlob (GF cf@(Ctx ctx f@(Func (FuncDec name t params) statements))) =
     vsmWithNewScope $ do
         compileParams params
         vsmInEntryPoint t False $ do
-            whenM ((return elem) `ap` (return $ ctxItem name) `ap` get'vsNamesUsed) (vsmAddErr (srcCtx name, ctxItem name ++ " is already defined"))
+            whenM (return elem `ap` return (ctxItem name) `ap` get'vsNamesUsed) (vsmAddErr (srcCtx name, ctxItem name ++ " is already defined"))
             returns <- compileStatements statements
             when (not returns && t /= LLVoid) (vsmAddErr (srcCtx name, ctxItem name ++ ": not all code paths return a value"))
             vsmRegisterFunc f
@@ -572,7 +580,7 @@ compileGlob (GI (Ctx ctx name) bindings prefix) =
     vsmWithModule name $ do
         let imp = (name, sort bindings, prefix)
         imports <- get'vsImports
-        when (not (imp `elem` imports)) $ do
+        unless (imp `elem` imports) $ do
             library <- get'vsLib
             case lookupModule name library of
                 Left (CodeErrs errs) -> vsmAddErrs $ CodeErrs (map (\ (_,err) -> (ctx, "module " ++ name ++ ": " ++ err)) errs)
@@ -582,7 +590,7 @@ compileGlob (GI (Ctx ctx name) bindings prefix) =
                        Left (CodeErrs ((_,err):_)) -> vsmAddErr (ctx, err)
                        Right () -> do
                            let (vars',funcDecs') = evalState (preprocessGlobDefs "" globs) (emptyValidationState { vsLib = library })
-                           let renames = bindings ++ (map (\ x -> (x,prefix ++ x)) ((map varName vars') ++ (funcNames funcDecs')))
+                           let renames = bindings ++ map (\ x -> (x,prefix ++ x)) (map varName vars' ++ funcNames funcDecs')
                            vsmAddImport imp
                            vsmWithContext ctx $ mapM_ (rewriteGlob' prefix renames (map ctxItem freevars ++ vars')) globs
 
@@ -604,7 +612,7 @@ rewriteGlob' prefix renames vars (GV (Ctx ctx (Var name t)) mexpr) =
             namesUsed <- get'vsNamesUsed
             if name' `elem` namesUsed
                 then vsmAddErr (ctx, name' ++ " imported from module is already defined")
-                else let rewrittenGlobVar = GDecl (nullCtx (Var name' t)) (fmap (ctxItem . (rewriteCtxExpr renames)) mexpr)
+                else let rewrittenGlobVar = GDecl (nullCtx (Var name' t)) (fmap (ctxItem . rewriteCtxExpr renames) mexpr)
                      in do vsmAddToNamesUsed name'
                            vsmRegisterGlobal (Ctx ctx (Var name' t))
                            vsmAddGlobal rewrittenGlobVar
@@ -619,7 +627,7 @@ rewriteGlob' prefix0 renames vars (GI (Ctx ctx mName) bindings prefix) =
                       bindings' <- mapM rewriteBinding bindings
                       let imp = (mName,sort bindings', prefix0 ++ prefix)
                       imports <- get'vsImports
-                      when (not (imp `elem` imports)) $ do
+                      unless (imp `elem` imports) $ do
                           let (vars',funcDecs') = evalState (preprocessGlobDefs "" globs) (emptyValidationState { vsLib = lib })
                           let renames = bindings' ++ map (\ x -> (x,prefix0 ++ prefix ++ x)) (map varName vars' ++ map (ctxItem . funcName) funcDecs')
                           vsmAddImport imp
@@ -742,14 +750,14 @@ compileStatement (Ctx ctx (Return (Just expr))) = do
            (LLKey,LLString) -> return ()
            (LLInteger,LLFloat) -> return ()
            (x,y) | x /= LLVoid && x == y -> return ()
-                 | otherwise -> (vsmAddErr (ctx,"inappropriate return type for function/handler"))
+                 | otherwise -> vsmAddErr (ctx,"inappropriate return type for function/handler")
     put'vsBranchReturns True
     return True
 compileStatement (Ctx ctx (StateChange name)) = do
     (_,scallow) <- get'vsEntryPointInfo
     snames <- get'vsStateNames
-    when (not scallow) $ vsmAddErr (ctx,"state changes not allowed from this context")
-    when (not (name `elem` snames)) $ vsmAddErr (ctx,name ++ " is not a valid state")
+    unless scallow $ vsmAddErr (ctx,"state changes not allowed from this context")
+    unless (name `elem` snames) $ vsmAddErr (ctx,name ++ " is not a valid state")
     get'vsBranchReturns
 compileStatement (Ctx ctx (Do expr)) = compileCtxExpr expr >> get'vsBranchReturns
 compileStatement (Ctx ctx (Compound stmts)) = compileStatements stmts
@@ -769,7 +777,7 @@ compileStatements stmts = do
         get'vsBranchReturns
 
 compileParams :: [CtxVar] -> VState ()
-compileParams vs = mapM_ ( \(Ctx ctx v) -> vsmAddLocal ctx v) vs
+compileParams = mapM_ ( \(Ctx ctx v) -> vsmAddLocal ctx v)
 
 isCastValid t t' = (t' == t) || (t,t') `elem` validCasts
    where validCasts = [(LLInteger,LLFloat), (LLFloat,LLInteger),
@@ -792,11 +800,11 @@ compileCtxExpr (Ctx ctx (Cast t expr)) =
               vsmAddErr (ctx,"cannot cast a value of type " ++ lslTypeString t'
                   ++ " to type " ++ lslTypeString t)
       typeval t
-compileCtxExpr (Ctx ctx0 (Get ((Ctx ctx name),component))) = do
+compileCtxExpr (Ctx ctx0 (Get (Ctx ctx name,component))) = do
    vsmAddRef name ctx
    vars <- get'vsGVs
    locals <- get'vsLocalVars
-   let varList = (concat locals ++ vars)
+   let varList = concat locals ++ vars
    case (findType name varList `mplus` findConstType name,component) of
        (Nothing,_) -> err ctx  ("undefined variable or constant: " ++ name)
        (Just LLRot,All) -> typeval LLRot
@@ -822,7 +830,7 @@ compileCtxExpr (Ctx ctx (Inv expr)) =
        return mt
 compileCtxExpr (Ctx ctx plus@(Add expr1 expr2)) =
     do  mtypes <- compileEach (expr1,expr2)
-        chkMTypes mtypes $ \ types -> case types of
+        chkMTypes mtypes $ \case
             (LLInteger,LLInteger) -> typeval LLInteger
             (LLInteger,LLFloat) -> typeval LLFloat
             (LLFloat,LLInteger) -> typeval LLFloat
@@ -836,7 +844,7 @@ compileCtxExpr (Ctx ctx plus@(Add expr1 expr2)) =
             (t0,t1) -> reportIncompatibleOperands ctx t0 t1 >> notype
 compileCtxExpr (Ctx ctx minus@(Sub expr1 expr2)) =
     do  mtypes <- compileEach (expr1,expr2)
-        chkMTypes mtypes $ \ types -> case types of
+        chkMTypes mtypes $ \case
             (LLInteger,LLInteger) -> typeval LLInteger
             (LLInteger,LLFloat) -> typeval LLFloat
             (LLFloat,LLInteger) -> typeval LLFloat
@@ -846,7 +854,7 @@ compileCtxExpr (Ctx ctx minus@(Sub expr1 expr2)) =
             (t0,t1) -> reportIncompatibleOperands ctx t0 t1 >> notype
 compileCtxExpr (Ctx ctx expr@(Mul expr1 expr2)) =
     do  mtypes <- compileEach (expr1,expr2)
-        chkMTypes mtypes $ \ types -> case types of
+        chkMTypes mtypes $ \case
             (LLInteger,LLInteger) -> typeval LLInteger
             (LLInteger,LLFloat) -> typeval LLFloat
             (LLFloat,LLInteger) -> typeval LLFloat
@@ -861,7 +869,7 @@ compileCtxExpr (Ctx ctx expr@(Mul expr1 expr2)) =
             (t0,t1) -> reportIncompatibleOperands ctx t0 t1 >> notype
 compileCtxExpr (Ctx ctx expr@(Div expr1 expr2)) =
     do  mtypes <- compileEach (expr1,expr2)
-        chkMTypes mtypes $ \ types -> case types of
+        chkMTypes mtypes $ \case
             (LLInteger,LLInteger) -> typeval LLInteger
             (LLInteger,LLFloat) -> typeval LLFloat
             (LLFloat,LLInteger) -> typeval LLFloat
@@ -873,13 +881,13 @@ compileCtxExpr (Ctx ctx expr@(Div expr1 expr2)) =
             (t0,t1) -> reportIncompatibleOperands ctx t0 t1 >> notype
 compileCtxExpr (Ctx ctx expr@(Mod expr1 expr2)) =
     do mtypes <- compileEach (expr1,expr2)
-       chkMTypes mtypes $ \ types -> case types of
+       chkMTypes mtypes $ \case
            (LLInteger,LLInteger) -> typeval LLInteger
            (LLVector,LLVector) -> typeval LLVector
            (t1,t2) -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx e@(Equal expr1 expr2)) =
     do mtypes <- compileEach (expr1,expr2)
-       chkMTypes mtypes $ \ types -> case types of
+       chkMTypes mtypes $ \case
            (LLInteger,LLFloat) -> typeval LLInteger
            (LLFloat,LLInteger) -> typeval LLInteger
            (LLString,LLKey) -> typeval LLInteger
@@ -888,7 +896,7 @@ compileCtxExpr (Ctx ctx e@(Equal expr1 expr2)) =
                    | otherwise  -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx e@(NotEqual expr1 expr2)) =
     do mtypes <- compileEach (expr1,expr2)
-       chkMTypes mtypes $ \ types -> case types of
+       chkMTypes mtypes $ \case
            (LLInteger,LLFloat) -> typeval LLInteger
            (LLFloat,LLInteger) -> typeval LLInteger
            (LLString,LLKey) -> typeval LLInteger
@@ -909,7 +917,7 @@ compileCtxExpr (Ctx ctx e@(Or expr1 expr2)) = compileBothInteger ctx (expr1, exp
 compileCtxExpr (Ctx ctx e@(IncBy (name,All) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLInteger,LLInteger) -> typeval  LLInteger
         (LLFloat,LLInteger) -> typeval  LLFloat
         (LLFloat,LLFloat) -> typeval  LLFloat
@@ -922,13 +930,13 @@ compileCtxExpr (Ctx ctx e@(IncBy (name,All) expr)) = do
 compileCtxExpr (Ctx ctx e@(IncBy (name,_) expr) ) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (t1,t2) | structure t1 && scalar t2 -> typeval LLFloat
                 | otherwise -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx e@(DecBy (name,All) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLInteger,LLInteger) -> typeval  LLInteger
         (LLFloat,LLInteger) -> typeval  LLFloat
         (LLFloat,LLFloat) -> typeval  LLFloat
@@ -938,13 +946,13 @@ compileCtxExpr (Ctx ctx e@(DecBy (name,All) expr)) = do
 compileCtxExpr (Ctx ctx e@(DecBy (name,_) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (t1,t2) | structure t1 && scalar t2 -> typeval  LLFloat
                 | otherwise -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx e@(MulBy (name,All) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLInteger,LLInteger) -> typeval  LLInteger
         (LLFloat,LLInteger) -> typeval  LLFloat
         (LLFloat,LLFloat) -> typeval  LLFloat
@@ -957,13 +965,13 @@ compileCtxExpr (Ctx ctx e@(MulBy (name,All) expr)) = do
 compileCtxExpr (Ctx ctx e@(MulBy (name,_) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (t1,t2) | structure t1 && scalar t2 -> typeval  LLFloat
                 | otherwise -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx e@(DivBy (name,All) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLInteger,LLInteger) -> typeval  LLInteger
         (LLFloat,LLInteger) -> typeval  LLFloat
         (LLFloat,LLFloat) -> typeval  LLFloat
@@ -975,13 +983,13 @@ compileCtxExpr (Ctx ctx e@(DivBy (name,All) expr)) = do
 compileCtxExpr (Ctx ctx e@(DivBy (name,_) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (t1,t2) | structure t1 && scalar t2 -> typeval  LLFloat
                 | otherwise -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx e@(ModBy (name,All) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLInteger,LLInteger) -> typeval  LLInteger
         (LLVector,LLVector) -> typeval  LLVector
         (t1,t2) -> reportIncompatibleOperands ctx t1 t2 >> notype
@@ -997,7 +1005,7 @@ compileCtxExpr (Ctx ctx e@(PreDec var)) = compileIncDecOp var "++"
 compileCtxExpr (Ctx ctx expr0@(Set (name,All) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLFloat,LLInteger) -> typeval  LLFloat
         (LLKey,LLString) -> typeval  LLKey
         (LLString,LLKey) -> typeval  LLString
@@ -1006,14 +1014,14 @@ compileCtxExpr (Ctx ctx expr0@(Set (name,All) expr)) = do
 compileCtxExpr (Ctx ctx expr0@(Set (name,S) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLRot,LLFloat) -> typeval  LLFloat
         (LLRot,LLInteger) -> typeval  LLFloat
         (t1,t2) -> reportIncompatibleOperands ctx t1 t2 >> notype
 compileCtxExpr (Ctx ctx expr0@(Set (name,_) expr)) = do
     reportErrorIfNoModify name
     mtypes <- compileNameExpr (name,expr)
-    chkMTypes mtypes $ \ types -> case types of
+    chkMTypes mtypes $ \case
         (LLVector,LLFloat) -> typeval  LLFloat
         (LLVector,LLInteger) -> typeval  LLFloat
         (LLRot,LLFloat) -> typeval  LLFloat
@@ -1024,20 +1032,20 @@ compileCtxExpr (Ctx ctx (FloatLit _)) = typeval  LLFloat
 compileCtxExpr (Ctx ctx (StringLit _)) = typeval  LLString
 compileCtxExpr (Ctx ctx (KeyLit _)) = typeval  LLKey
 compileCtxExpr (Ctx ctx (ListExpr es)) = do
-    mapM compileListExprElement es
+    mapM_ compileListExprElement es
     typeval  LLList
 compileCtxExpr (Ctx ctx (VecExpr xExpr yExpr zExpr)) =
     do  xt <- compileCtxExpr xExpr
         yt <- compileCtxExpr yExpr
         zt <- compileCtxExpr zExpr
-        when (not (all (`elem` [LLInteger,LLFloat]) [c | Just c <- [xt,yt,zt]])) $ vsmAddErr (ctx, "invalid components for vector")
+        unless (all (`elem` [LLInteger,LLFloat]) (catMaybes [xt, yt, zt])) $ vsmAddErr (ctx, "invalid components for vector")
         typeval  LLVector
 compileCtxExpr (Ctx ctx (RotExpr xExpr yExpr zExpr sExpr)) =
     do  xt <- compileCtxExpr xExpr
         yt <- compileCtxExpr yExpr
         zt <- compileCtxExpr zExpr
         st <- compileCtxExpr sExpr
-        when (not (all (`elem` [LLInteger,LLFloat]) [ c | Just c <- [xt,yt,zt,st]])) $ vsmAddErr (ctx, "invalid components for rotation")
+        unless (all (`elem` [LLInteger,LLFloat]) (catMaybes [xt, yt, zt, st])) $ vsmAddErr (ctx, "invalid components for rotation")
         typeval LLRot
 
 chkMTypes (Nothing,Nothing) _ = notype
@@ -1051,7 +1059,7 @@ reportErrorIfNoModify (Ctx ctx name) =
 reportIncompatibleOperands ctx t0 t1 =
     vsmAddErr (ctx,"the types of the operands aren't compatible (" ++ lslTypeString t0 ++ " vs. " ++ lslTypeString t1 ++ ")")
 
-compileExpressions es = mapM_ compileCtxExpr es
+compileExpressions = mapM_ compileCtxExpr
 compileMExpression Nothing = typeval LLVoid
 compileMExpression (Just expr) = compileCtxExpr expr
 
@@ -1069,7 +1077,7 @@ compileCall (Ctx ctx fname) exprs = do
                   do mt' <- compileCtxExpr arg
                      case mt' of
                          Nothing -> return ()
-                         Just t' -> when (not (matchTypes t t')) $ vsmAddErr (ctx, "argument " ++ (show n) ++ " in call to function (" ++ fname ++ ") is of wrong type:" ++ (lslTypeString t') ++ ", should be " ++ (lslTypeString t))
+                         Just t' -> unless (matchTypes t t') $ vsmAddErr (ctx, "argument " ++ show n ++ " in call to function (" ++ fname ++ ") is of wrong type:" ++ lslTypeString t' ++ ", should be " ++ lslTypeString t)
                      vArg (n+1) ts args
             in vArg 1 (ctxItems params) exprs >> typeval t
 
@@ -1128,7 +1136,7 @@ compileListExprElement e@(Ctx ctx _) = do
 
 validBindings vars freevars bindings =
     if length freevars /= length bindings then
-        throwStrError ("wrong number of bindings in import: " ++ (show $ length freevars) ++ " required")
+        throwStrError ("wrong number of bindings in import: " ++ show (length freevars) ++ " required")
     else let f [] = return ()
              f ((x,y):xys) =
                 case (findType x (ctxItems freevars), findType y vars) of
@@ -1184,9 +1192,9 @@ sortModules modules =
         sort1 [] = []
         sort1 list =
            let sorted = sortBy cmp list
-               (nodeps,deps) = span ((==0).length.snd.snd) sorted
+               (nodeps,deps) = span (null . snd.snd) sorted
                exclude = map fst nodeps
-               newlist = if length nodeps == 0 then error "circular depencencies in library"
+               newlist = if null nodeps then error "circular depencencies in library"
                          else map (\ (nm,(m,l)) -> (nm, (m,filter (`notElem` exclude) l))) deps
            in nodeps ++ sort1 newlist
    in map (\ (s,(m,_)) -> (s,m)) $ sort1 modules
@@ -1204,7 +1212,7 @@ compileLibrary modules =
             case evalState (compileModule m) (emptyValidationState { vsLib = libFromAugLib augLib })  of
                 Left s -> (name, Left s):augLib
                 Right gs -> (name,Right (m,gs)):augLib
-    in (foldl validate [] sorted) ++ (map (\ (n,s) -> (n,Left s)) bad)
+    in foldl validate [] sorted ++ map (second Left) bad
 
 libFromAugLib :: AugmentedLibrary -> Library
 libFromAugLib augLib =
@@ -1241,7 +1249,7 @@ moduleFromScript script = LModule globDefs []
 globDefFromGlob (GDecl v me) = GV v (fmap nullCtx me)
 funcDefsFromState (Ctx _ (State ctxnm handlers)) = map (funcDefFromHandler (ctxItem ctxnm)) handlers
 funcDefFromHandler stateName (Ctx _ (Handler ctxnm params stmts)) = GF $ nullCtx $ Func (FuncDec combinedName LLVoid params) stmts
-    where combinedName = nullCtx $ stateName ++ "$$" ++ (ctxItem ctxnm)
+    where combinedName = nullCtx $ stateName ++ "$$" ++ ctxItem ctxnm
 
 rewriteCtxExpr :: [(String,String)] -> Ctx Expr -> Ctx Expr
 rewriteCtxExpr renames = everywhere (mkT (rewriteName renames))
@@ -1258,7 +1266,7 @@ rewriteCtxStatement n bindings (Ctx c s) =
 rewriteStatements _ _ [] = []
 rewriteStatements n bindings (Ctx c s:ss) =
     let (n',bindings',s') = rewriteStatement n bindings s in
-       (Ctx c s'):(rewriteStatements n' bindings' ss)
+       Ctx c s':rewriteStatements n' bindings' ss
 
 rewriteStatement n bindings (Compound stmts) = (n, bindings, Compound $ rewriteStatements n bindings stmts)
 rewriteStatement n bindings (While expr stmt) =
@@ -1278,7 +1286,7 @@ rewriteStatement n bindings (If expr stmt1 stmt2) =
         (n, bindings, If (rewriteCtxExpr bindings expr) stmt1' stmt2')
 rewriteStatement n bindings (Decl (Var name t) val) =
    let (n',bindings', newname) =
-           if any (\(name',_) -> name == name') bindings then let newname = "local" ++ (show n) in (n + 1, (name,newname):bindings, newname)
+           if any (\(name',_) -> name == name') bindings then let newname = "local" ++ show n in (n + 1, (name,newname):bindings, newname)
            else (n,bindings,name)
    in (n',bindings',Decl (Var newname t) (rewriteMExpression bindings val))
 rewriteStatement n bindings (Return Nothing) = (n, bindings, Return Nothing)
@@ -1286,8 +1294,9 @@ rewriteStatement n bindings (Return (Just expr)) = (n, bindings, Return $ Just $
 rewriteStatement n bindings (Do expr) = (n, bindings, Do $ rewriteCtxExpr bindings expr)
 rewriteStatement n bindings s = (n, bindings, s)
 
-rewriteCtxExprs bindings ctxExprs = map (rewriteCtxExpr bindings) ctxExprs
+rewriteCtxExprs bindings = map (rewriteCtxExpr bindings)
 
+rewriteMExpression :: Functor f => [(String, String)] -> f (Ctx Expr) -> f (Ctx Expr)
 rewriteMExpression bindings = fmap (rewriteCtxExpr bindings)
 
 scalar = (`elem` [LLFloat,LLInteger])

@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XNoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Language.Lsl.Internal.Constants where
 
 import Data.Bits((.|.),shiftL)
@@ -60,7 +60,7 @@ cDebugChannel = 2147483647 :: LSLInteger
 llcDebugChannel = IVal cDebugChannel
 
 cEOF = "\n\n\n"
-llcEOF = (SVal cEOF)
+llcEOF = SVal cEOF
 
 cPermissionControlCamera = 0x800 :: LSLInteger
 llcPermissionControlCamera = IVal cPermissionControlCamera
@@ -298,7 +298,7 @@ allConstants = [
     Constant "CLICK_ACTION_SIT" llcClickActionSit,
     Constant "CLICK_ACTION_TOUCH" llcClickActionTouch,
     Constant "CLICK_ACTION_ZOOM" llcClickActionZoom,
-    Constant "CLICK_ACTION_DISABLED" llcClickActionDisabled, 
+    Constant "CLICK_ACTION_DISABLED" llcClickActionDisabled,
     Constant "CONTENT_TYPE_ATOM" (IVal 0x04),
     Constant "CONTENT_TYPE_FORM" (IVal 0x07),
     Constant "CONTENT_TYPE_HTML" (IVal 0x01),
@@ -337,7 +337,7 @@ allConstants = [
     Constant "ENV_VALIDATION_FAIL" (IVal (-6)),
     Constant "ENV_NO_EXPERIENCE_LAND" (IVal (-7)),
     Constant "ENV_THROTTLE" (IVal (-8)), -- Not implemented yet?
-    Constant "ENVIRONMENT_DAYINFO" (IVal (200)),
+    Constant "ENVIRONMENT_DAYINFO" (IVal 200),
     Constant "EOF" $ SVal cEOF,
     Constant "ERR_GENERIC" (IVal (-1)),
     Constant "ERR_MALFORMED_PARAMS" (IVal (-3)),
@@ -940,10 +940,10 @@ findConstant :: RealFloat a => String -> Maybe (Constant a)
 findConstant s = find (\ c -> s == constName c) allConstants
 
 findConstVal :: RealFloat a => String -> Maybe (LSLValue a)
-findConstVal s = fmap constVal $ findConstant s
+findConstVal s = constVal <$> findConstant s
 
 findConstType :: String -> Maybe LSLType
-findConstType s = fmap typeOfLSLValue $ findConstVal s
+findConstType s = typeOfLSLValue <$> findConstVal s
 
 isConstant :: String -> Bool
 isConstant s =
