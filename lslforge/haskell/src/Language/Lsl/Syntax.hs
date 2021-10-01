@@ -533,8 +533,9 @@ compileLSLScript (LSLScript comment globs states) = do
 
 preprocessStates states = let snames = map (\ (Ctx _ (State cn _)) -> ctxItem cn) states in put'vsStateNames snames
 
-preprocessGlobDefs :: String -> [GlobDef] -> VState ([Var],[FuncDec])
-preprocessGlobDefs prefix globs = do
+preprocessGlobDefs :: String -> [GlobDef] -> [CtxVar] -> VState ([Var],[FuncDec])
+preprocessGlobDefs prefix globs freevars = do
+    mapM_ (vsmAddGV . ctxItem) freevars
     preprocessGlobDefs_ prefix globs
     vars <- get'vsGVs
     funcDecs <- get'vsGFs
@@ -589,7 +590,7 @@ compileGlob (GI (Ctx ctx name) bindings prefix) =
                    case validBindings vars freevars bindings of
                        Left (CodeErrs ((_,err):_)) -> vsmAddErr (ctx, err)
                        Right () -> do
-                           let (vars',funcDecs') = evalState (preprocessGlobDefs "" globs) (emptyValidationState { vsLib = library })
+                           let (vars',funcDecs') = evalState (preprocessGlobDefs "" globs freevars) (emptyValidationState { vsLib = library })
                            let renames = bindings ++ map (\ x -> (x,prefix ++ x)) (map varName vars' ++ funcNames funcDecs')
                            vsmAddImport imp
                            vsmWithContext ctx $ mapM_ (rewriteGlob' prefix renames (map ctxItem freevars ++ vars')) globs
@@ -628,7 +629,7 @@ rewriteGlob' prefix0 renames vars (GI (Ctx ctx mName) bindings prefix) =
                       let imp = (mName,sort bindings', prefix0 ++ prefix)
                       imports <- get'vsImports
                       unless (imp `elem` imports) $ do
-                          let (vars',funcDecs') = evalState (preprocessGlobDefs "" globs) (emptyValidationState { vsLib = lib })
+                          let (vars',funcDecs') = evalState (preprocessGlobDefs "" globs freevars) (emptyValidationState { vsLib = lib })
                           let renames = bindings' ++ map (\ x -> (x,prefix0 ++ prefix ++ x)) (map varName vars' ++ map (ctxItem . funcName) funcDecs')
                           vsmAddImport imp
                           mapM_ (rewriteGlob' (prefix0 ++ prefix) renames vars') globs
