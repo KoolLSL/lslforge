@@ -110,7 +110,7 @@ test-suite spec
   hs-source-dirs:      src,test
   main-is:             Main.hs
   build-depends:       base
-                     , HUnit < 1.6
+                     , HUnit < 1.7
   other-modules:
     Control.Monad.Outdated.Error
     Data.Generics.Extras.Schemes
@@ -175,3 +175,4 @@ test-suite spec
     Text.Here
     Text.ParserCombinators.ParsecExtras.Language
     Text.ParserCombinators.ParsecExtras.Token
+    Paths_LSLForge

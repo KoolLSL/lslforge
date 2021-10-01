@@ -6,27 +6,36 @@ An LSL Script Editor/compiler for Second Life's Scripting Language.
 
 LSLForge is a fork of the popular LSLPlus editing environment, to provide Linden Scripting Language (LSL) support in Eclipse.
 
+## Description
+
+LSLForge is a plugin for the Eclipse platform. The plugin allows editing, "compiling" (gathering code included in modules), executing, and unit testing your Second Life® Linden Scripting Language (LSL) code.
+
+Because it is an Eclipse plugin, when you use LSLForge you can take advantage of many of the useful features of Eclipse. Integrated support of a source code control system such as Git, CVS and Subversion comes for "free", and there are many other features &mdash; task list management, integration with bug tracking tools, etc. You will of course need to make sure you get the appropriate plugins to use these features.
+
 ## Forks Purposes
 
 * [`raysilent`](https://github.com/raysilent/lslforge): This is a fork where the most activity is happening, which is maintaining the latest LSL definitions for functions and constants of `LSL` according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html), also bug fixes, and keeping the Eclipse Plugin Update Site up-to-date.
 * [`elnewfie`](https://github.com/elnewfie/lslforge): After all the tests are accomplished, the repo is merged into the [`elnewfie`](https://github.com/elnewfie/lslforge)'s original repo, to avoid confusion.
 
-### News (newest first)
+### Changelog
 
 * **0.1.9.8**
-    - [x] [`llOrd`](http://wiki.secondlife.com/wiki/LlOrd)
-    - [x] [`llChar`](http://wiki.secondlife.com/wiki/LlChar)
-    - [x] [`llHash`](http://wiki.secondlife.com/wiki/LlHash)
-    - [x] [`llGetEnv()`](http://wiki.secondlife.com/wiki/LlGetEnv) constants: `"whisper_range"`, `"chat_range"` & `"shout_range"` (in comments)
-    - [x] [`llGetInventoryAcquireTime`](http://wiki.secondlife.com/wiki/LlGetInventoryAcquireTime)
-    - [x] [`llOpenFloater`](http://wiki.secondlife.com/wiki/LlOpenFloater)
-        - [ ] (Postponed) Return error codes seem to be missing in the viewer.
-    - [x] [`CLICK_ACTION_DISABLED`](http://wiki.secondlife.com/wiki/CLICK_ACTION_DISABLED)
-    - [ ] (Postponed) [`TARGETED_EMAIL_ROOT_CREATOR`](http://wiki.secondlife.com/wiki/TARGETED_EMAIL_ROOT_CREATOR) is eliminated (exists in the viewer for backward compatibility most likely). It should be safer to remove it completely from the IntelliSense for early error discovery rather than keep it here.
-    - [x] Mark [`llXorBase64StringsCorrect`](http://wiki.secondlife.com/wiki/LlXorBase64StringsCorrect) as deprecated in comments.
+    * Update to `ghc-8.6.5` (Thanks [@PellSmit](https://github.com/PellSmit))
+    * Fixed bugs (Thanks [@PellSmit](https://github.com/PellSmit))
+    * Simulator up to [2021-08-27.563375](https://releasenotes.secondlife.com/simulator/2021-08-27.563375.html):
+        - [x] [`llOrd`](http://wiki.secondlife.com/wiki/LlOrd)
+        - [x] [`llChar`](http://wiki.secondlife.com/wiki/LlChar)
+        - [x] [`llHash`](http://wiki.secondlife.com/wiki/LlHash)
+        - [x] [`llGetEnv()`](http://wiki.secondlife.com/wiki/LlGetEnv) constants: `"whisper_range"`, `"chat_range"` & `"shout_range"` (in comments)
+        - [x] [`llGetInventoryAcquireTime`](http://wiki.secondlife.com/wiki/LlGetInventoryAcquireTime)
+        - [x] [`llOpenFloater`](http://wiki.secondlife.com/wiki/LlOpenFloater)
+            - [ ] (Postponed) Return error codes seem to be missing in the viewer.
+        - [x] [`CLICK_ACTION_DISABLED`](http://wiki.secondlife.com/wiki/CLICK_ACTION_DISABLED)
+        - [ ] (Postponed) [`TARGETED_EMAIL_ROOT_CREATOR`](http://wiki.secondlife.com/wiki/TARGETED_EMAIL_ROOT_CREATOR) is eliminated (exists in the viewer for backward compatibility most likely). It should be safer to remove it completely from the IntelliSense for early error discovery rather than keep it here.
+        - [x] Mark [`llXorBase64StringsCorrect`](http://wiki.secondlife.com/wiki/LlXorBase64StringsCorrect) as deprecated in comments.
 
 * **0.1.9.7**
-    * Fixed bugs (Thanks [@PellSmit](https://github.com/PellSmit)))
+    * Fixed bugs (Thanks [@PellSmit](https://github.com/PellSmit))
     * New functions and constants:
         * `llGetDayLength`
         * `llGetDayOffset`
@@ -107,12 +116,6 @@ LSLForge is a fork of the popular LSLPlus editing environment, to provide Linden
     * `XP_ERROR_REQUEST_PERM_TIMEOUT` missing added
 * 2016-10-20 LSLForge **0.1.7** (Windows only)
 
-## Description
-
-LSLForge is a plugin for the Eclipse platform. The plugin allows editing, "compiling" (gathering code included in modules), executing, and unit testing your Second Life® Linden Scripting Language (LSL) code.
-
-Because it is an Eclipse plugin, when you use LSL Plus you can take advantage of many of the useful features of Eclipse. Integrated support of a source code control system such as Git, CVS and Subversion comes for "free", and there are many other features -- task list management, integration with bug tracking tools, etc. You will of course need to make sure you get the appropriate plugins to use these features.
-
 ## Second Life® Group
 
 The official group for LSLForge Editor tool is [LSLForge Users](secondlife:///app/group/381ff28c-1171-27ac-77f5-ded3471b6245/about). General announcements, questions and answers.
@@ -123,13 +126,19 @@ The official group for LSLForge Editor tool is [LSLForge Users](secondlife:///ap
 
 ### Eclipse Plugin
 
-* **WARNING** Doesn't seem to work: 
-    * Eclipse IDE 2021-09 R (4.21.0)
+#### Incompatible Versions
+
+* **WARNING** Doesn't seem to work in: 
+    * Eclipse IDE `2021-09` R (`4.21.0`)
+
+#### Compatible Versions
 
 The following [Eclipse Distributions](https://www.eclipse.org/downloads/packages/release) were found working:
 
-* Eclipse IDE 2019‑06 R (4.12.0)
-* Eclipse Photon (4.8.0)
+* Eclipse IDE `2020-12` (`4.18.0`)
+* Eclipse IDE `2019-12` (`4.14.0`)
+* Eclipse IDE `2019‑06` (`4.12.0`)
+* Eclipse Photon (`4.8.0`)
 * Eclipse Oxygen
 
 > NOTE: Oomph seems to restore LSLForge native setting despite attempts to overwrite the field. The only workaround for now is to check `[X] Skip automatic task execution at startup time` under Oomph > Setup Tasks in Preferences. 
@@ -249,13 +258,15 @@ To install Stack, please visit the [Stack Homepage](https://www.haskellstack.org
 
 In a terminal, change directory to the project's `lslforge/haskell` subdirectory.
 
+Run `stack upgrade` to upgrade to the latest version.
+
 You will need to enter `stack setup` if you have a freshly installed Stack, or don't have the relevant compiler already set up. (Stack will tell you if you need to run this additional step.)
 
-Now run `stack install` in `lslforge/haskell` folder to build and install the **LSLForge** binary in one step.
+Now run with admin terminal `stack install` in `lslforge/haskell` folder to build and install the **LSLForge** binary in one step. (Weird access denied errors are due to Antivirus.)
 
 ### Post-compilation
 
-If your "install" was successful, an executable will appear at `%APPDATA%\local\bin` folder for Windows, or `$HOME/.local/bin` for other platforms (look at the message after install) - unless you changed the `local-bin-path` parameter in `config.yaml` to override default location.
+If your `stack install` is successful, an executable will appear at `%APPDATA%\local\bin` folder for Windows, or `$HOME/.local/bin` for other platforms (look at the message after install) - unless you changed the `local-bin-path` parameter in `config.yaml` to override default location.
 
 To test the newly built file, you can specify it in the existing LSLForge Eclipse installation under `Preferences` > `LSLForge` settings. This will not make any new definitions show immediately, but they will after **restarting Eclipse**.
 
