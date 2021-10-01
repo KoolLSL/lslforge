@@ -2,6 +2,7 @@ module Language.Lsl.Internal.NumberParsing(readHexFloat,readInt) where
 
 import Data.Char(digitToInt)
 import Text.ParserCombinators.Parsec --(GenParser(..),(<|>),char,digit,hexDigit,
+import Data.Functor ((<&>))
    --many,many1,oneOf,option,parse,satisfy,optional)
 
 hexFloat =
@@ -16,7 +17,7 @@ hexFloat =
 fractionalPart =
     do char '.'
        digits <- many1 hexDigit
-       return $ foldr (\ x y -> (x + y) / 16.0) 0.0 $ map (fromIntegral . digitToInt) digits
+       return $ foldr ((\ x y -> (x + y) / 16.0) . (fromIntegral . digitToInt)) 0.0 digits
 
 expPart =
     do oneOf "pP"
@@ -54,7 +55,7 @@ decimalInt =
        return $ foldl (\ x y -> x * 10 + y) 0 $ map (fromIntegral . digitToInt) digits
 
 int = do char '0'
-         (hexInt <|> decimalInt <|> return 0)
+         hexInt <|> decimalInt <|> return 0
    <|> decimalInt
 
 intAndTail :: Parser (Int, String)
@@ -77,8 +78,7 @@ fracPart reqDigit w = do
     digits <- (if reqDigit then many1 else many) digit
         <?> "fractional part of decimal"
     p <- option 1.0 expon
-    return $ p * (w + (foldr (\ b d -> (b + d) / 10.0) 0
-        $ map (fromIntegral.digitToInt) digits))
+    return $ p * (w + foldr ((\ b d -> (b + d) / 10.0) . (fromIntegral.digitToInt)) 0 digits)
 
 expon :: Fractional a => GenParser Char st a
 expon = do
@@ -101,7 +101,7 @@ float' :: Fractional a => GenParser Char st a
 float' = do
     wholeDigits <- many1 digit <?> "number"
     let w = foldl (\ b d -> b * 10 + d) 0 $ map digitToInt wholeDigits
-    mf <- option Nothing (char '.' >> option (fromIntegral w) (fracPart False (fromIntegral w)) >>= return . Just)
+    mf <- option Nothing ((char '.' >> option (fromIntegral w) (fracPart False (fromIntegral w))) <&> Just)
     case mf of
-        Nothing -> try ( expon >>= \ p -> return $ (fromIntegral w * p) ) <|> (return $ fromIntegral w)
+        Nothing -> try ( expon >>= \ p -> return (fromIntegral w * p) ) <|> return (fromIntegral w)
         Just f -> return f

@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleContexts, NoMonomorphismRestriction,
-    FlexibleInstances, MultiParamTypeClasses, TypeSynonymInstances,
-    GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts, NoMonomorphismRestriction, FlexibleInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+{-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.DOMProcessing(
 --     Content(..),
 --     Document(..),
@@ -71,14 +71,14 @@ runAcc nf f acceptor = do
         \ s -> getTag >>= \ t -> throwError ("in element " ++ t ++ ": " ++ s)
     where find bs [] = nf
           find bs (ce@(CElem e@(Elem nm attrs ec) i):cs) =
-              (try (unqualifiedQName nm) e i >>= maybe (find (ce:bs) cs) (\ v -> setContent (reverse bs ++ cs) >> f v))
+              try (unqualifiedQName nm) e i >>= maybe (find (ce:bs) cs) (\ v -> setContent (reverse bs ++ cs) >> f v)
           find bs (ce:cs) = find (ce:bs) cs
           try nm e i = withContext e acceptor `catchError` \ s ->
               throwError ("in element " ++ nm ++ " in " ++ show i ++ ": " ++ s)
 
 tag :: MonadXMLAccept m => String -> CAcceptor m ()
 tag t = do
-    tagMatches <- (==) <$> pure t <*> getTag
+    tagMatches <- (==) t <$> getTag
     unless tagMatches $ throwError ("tag " ++ t ++ " not matched")
 
 tagit :: MonadXMLAccept m => String -> CAcceptor m a
@@ -108,14 +108,14 @@ def t def acceptor = runAcc (return def) return (tagit t acceptor)
 
 text :: (MonadXMLAccept m) => m String
 text = do
-    s <- (liftM concat . mapM textItem) =<< getContent
+    s <- (fmap concat . mapM textItem) =<< getContent
     setContent []
     return s
 
 val :: (MonadXMLAccept m, Read a) => CAcceptor m a
 val = text >>= readM
 
-bool = text >>= \ s -> case s of
+bool = text >>= \case
     "true" -> return True
     "false" -> return False
     "True" -> return True
@@ -133,7 +133,7 @@ textItem (CRef (RefEntity "apos") _) = return "'"
 textItem (CMisc _ i) = throwError ("unexpected content in " ++ show i)
 
 choose :: MonadXMLAccept m => CAcceptor m a -> CAcceptor m a -> CAcceptor m a
-choose i j = i `catchError` (const j)
+choose i j = i `catchError` const j
 
 choice :: MonadXMLAccept m => [CAcceptor m (Maybe a)] -> CAcceptor m (Maybe a)
 choice [] = return Nothing --throwError "nothing matched"
@@ -156,7 +156,7 @@ elist acc = foldM f [] =<< getContent where
     f l (CString _ _ i) = return l
     err i = throwError ("in " ++ show i ++ " unexpected non-element content")
 
-liste s = (elist . tagit s)
+liste s = elist . tagit s
 
 newtype AcceptT m a = AcceptT { unAcceptT :: ExceptT String (StateT (Element Posn) m) a }
    deriving (Monad)
@@ -183,7 +183,7 @@ instance Monad m => MonadXMLAccept (AcceptT m) where
     getContext = get
     setContext = put
 
-runAcceptT = (evalStateT . runExceptT . unAcceptT)
+runAcceptT = evalStateT . runExceptT . unAcceptT
 xmlAcceptT c s = runAcceptT c root where
     (Document _ _ root _) = xmlParse "input" s
 
@@ -209,6 +209,6 @@ instance MonadXMLAccept XMLAccept where
    getContext = get
    setContext = put
 
-runXMLAccept = (evalState . runExceptT . unXMLAccept)
+runXMLAccept = evalState . runExceptT . unXMLAccept
 xmlAccept c s = runXMLAccept c root where
     (Document _ _ root _) = xmlParse "input" s

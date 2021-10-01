@@ -3,10 +3,9 @@
              NoMonomorphismRestriction,
              GeneralizedNewtypeDeriving,
              MultiParamTypeClasses,
-             TypeSynonymInstances,
-             DeriveDataTypeable
-  #-}
+             DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.Exec(
     ScriptImage(..),
     EvalState,
@@ -31,10 +30,10 @@ module Language.Lsl.Internal.Exec(
 import Control.Monad(foldM_,when,mplus,msum,zipWithM,ap,liftM)
 import Control.Monad.Except(MonadError(..),ExceptT(..),runExceptT)
 import qualified Control.Monad.Fail as F
-import Control.Monad.State(MonadState(..),lift,StateT(..))
+import Control.Monad.State(MonadState(..),lift,StateT(..), gets)
 import Control.Monad.Trans
 import Data.Bits((.&.),(.|.),xor,shiftL,shiftR,complement)
-import Data.List(intersperse,find,tails)
+import Data.List(find,tails, intercalate)
 import Data.Data
 import qualified Data.Map as M
 import Data.Maybe(isJust)
@@ -59,6 +58,7 @@ import Language.Lsl.Internal.Evaluation(EvalResult(..),Event(..),
     ScriptInfo(..))
 import Language.Lsl.Internal.Constants(findConstVal,llcZeroRotation,
     llcZeroVector)
+import Data.Functor ((<&>))
 
 -- initialize a script for execution
 initLSLScript :: RealFloat a => CompiledLSLScript -> ScriptImage a
@@ -89,7 +89,7 @@ initStateSimple script perfAction log qtick utick chkBp =
                 checkBreakpoint = chkBp,
                 nextEvent = undefined }
 
-runEval = (runStateT . runExceptT . unEval)
+runEval = runStateT . runExceptT . unEval
 
 executeLsl img oid pid sid pkey perf log qtick utick chkBp queue maxTick =
      do let state = (EvalState { scriptImage = img,
@@ -170,12 +170,12 @@ data FrameInfo a = FrameInfo {
 
 frameInfo scriptImage = FrameInfo (scriptImageName scriptImage) $
     frames ++ [("glob", bottomContext, Nothing, glob scriptImage)]
-    where frames = (map collapseFrame $ callStack scriptImage)
+    where frames = map collapseFrame $ callStack scriptImage
           (bottomContext,_) = case frames of
               [] -> (Nothing,Nothing)
               _ -> let (_,ctx,_,_) = last frames in (ctx,Just 1)
           collapseFrame (Frame name ctx line (ss,_)) =
-              (name,ctx,line,concat $ map scopeMem ss)
+              (name,ctx,line,concatMap scopeMem ss)
 -- a soft reset occurs when a script that has been running, but
 -- has been persisted to inventory, is reactivated.  The curState
 -- stays the same, but if the script was running or sleeping, the
@@ -288,7 +288,7 @@ evalLit globals expr =
                 (IVal i) -> fromInteger $ toInteger i
                 _ -> error "invalid float expression"
     in case expr of
-        Neg (Ctx _ (IntLit i)) -> iVal $ (-i)
+        Neg (Ctx _ (IntLit i)) -> iVal (-i)
         Neg (Ctx _ (FloatLit f)) -> FVal (-(realToFrac f))
         IntLit i        -> iVal i
         FloatLit f      -> FVal (realToFrac f)
@@ -307,7 +307,7 @@ evalLit globals expr =
                     let (_,v) = initGlobal globals g in v
 
 bindParm (Var name t) lslVal = if typeOfLSLValue lslVal == t then Just (name,lslVal) else Nothing
-bindParms vars vals = zipWithM bindParm vars vals
+bindParms = zipWithM bindParm
 
 bindParmForgiving (Var name t) lslVal =
     case (t,typeOfLSLValue lslVal) of
@@ -318,7 +318,7 @@ bindParmForgiving (Var name t) lslVal =
         (t0,t1) | t0 == t1 -> return (name,lslVal)
                 | otherwise -> throwError "type mismatch!"
 
-bindParmsForgiving vars vals = zipWithM bindParmForgiving vars vals
+bindParmsForgiving = zipWithM bindParmForgiving
 
 toBool x = x /= 0
 
@@ -340,27 +340,27 @@ data Scope a = Scope {
     deriving (Show)
 
 readVarScope :: String -> Scope a -> Maybe (LSLValue a)
-readVarScope name (Scope { scopeMem = mem }) = readMem name mem
+readVarScope name Scope { scopeMem = mem } = readMem name mem
 readVarSStack :: String -> ScopeStack a -> Maybe (LSLValue a)
 readVarSStack name ss = foldl mplus Nothing $ map (readVarScope name) ss
 readVarFrame :: String -> Frame a -> Maybe (LSLValue a)
-readVarFrame name = (readVarSStack name) . fst . frameStacks
+readVarFrame name = readVarSStack name . fst . frameStacks
 readVarCallStack :: String -> CallStack a -> Maybe (LSLValue a)
-readVarCallStack name = (readVarFrame name) . head
+readVarCallStack name = readVarFrame name . head
 
 writeVarScope :: String -> LSLValue a -> Scope a -> Maybe (Scope a)
-writeVarScope name val s@(Scope { scopeMem = mem} ) = writeMem name val mem >>= \ mem' -> return s { scopeMem = mem' }
+writeVarScope name val s@Scope { scopeMem = mem} = writeMem name val mem >>= \ mem' -> return s { scopeMem = mem' }
 writeVarSStack rs name val [] = Nothing
 writeVarSStack rs name val (s:ss) =
     case writeVarScope name val s of
         Nothing -> writeVarSStack (s:rs) name val ss
-        Just s' -> Just $ (reverse rs) ++ (s':ss)
+        Just s' -> Just $ reverse rs ++ (s':ss)
 writeVarFrame name val frame =
     let (ss,es) = frameStacks frame in
     case writeVarSStack [] name val ss of
         Nothing -> Nothing
         Just ss' -> Just frame { frameStacks = (ss',es) }
-writeVarCallStack name val (frame:cs) = (flip (:) cs) <$> writeVarFrame name val frame
+writeVarCallStack name val (frame:cs) = flip (:) cs <$> writeVarFrame name val frame
 
 type EvalStack = [EvalElement]
 
@@ -378,24 +378,24 @@ data EvalElement =
     | EvPredef String | EvLoop Expr [Ctx Expr] (Ctx Statement) | EvMark
     deriving (Show,Data,Typeable)
 
-queryState q = q <$> get
+queryState = gets
 updateState :: Monad w => (EvalState w a -> EvalState w a) -> Eval a w ()
-updateState u = put =<< u <$> get
+updateState u = put . u =<< get
 queryExState q = queryState (q . scriptImage)
 updateExState :: Monad w => (ScriptImage a -> ScriptImage a) -> Eval a w ()
 updateExState u = updateState (\s -> s { scriptImage = u $ scriptImage s })
 
 getTick :: Monad w => Eval a w LSLInteger
-getTick = lift =<< qwtick <$> get
+getTick = lift . qwtick =<< get
 setTick :: (Monad w) => LSLInteger -> Eval a w ()
-setTick v = lift =<< (uwtick <$> get <*> pure v)
+setTick v = lift =<< (gets uwtick <*> pure v)
 
 doAction name scriptInfo args =
-    lift =<< performAction <$> get <*> pure name <*> pure scriptInfo <*> pure args
-logMsg s = lift =<< logMessage <$> get <*> pure s
+    lift =<< gets performAction <*> pure name <*> pure scriptInfo <*> pure args
+logMsg s = lift =<< gets logMessage <*> pure s
 
 checkBp bp = do
-    (result,sm') <- lift =<< checkBreakpoint <$> get <*> pure bp <*> getStepManager
+    (result,sm') <- lift =<< gets checkBreakpoint <*> pure bp <*> getStepManager
     setStepManager sm'
     return result
 
@@ -407,6 +407,11 @@ getVStack :: Monad w => Eval a w (ValueStack a)
 getVStack = queryExState valueStack
 getCallStack :: Monad w => Eval a w (CallStack a)
 getCallStack = queryExState callStack
+getCallStack' = do
+    cs <- getCallStack
+    case cs of
+        [] -> throwError "empty call stack"
+        (h:t) -> pure (h, t)
 getStates :: Monad w => Eval a w [State]
 getStates = queryExState states
 getCurrentEvent :: Monad w => Eval a w (Maybe (Event a))
@@ -440,14 +445,14 @@ initStacks = setVStack [] >> setCallStack []
 
 popScope :: Monad w => Eval a w (Scope a)
 popScope = do
-    (frame:frames) <- getCallStack
+    (frame,frames) <- getCallStack'
     let (s:ss,es) = frameStacks frame
     setCallStack (frame { frameStacks = (ss,es) }:frames)
     return s
 
 pushScope :: Monad w => MemRegion a -> LabelSet -> Eval a w ()
 pushScope mem labels = do
-    (frame:frames) <- getCallStack
+    (frame,frames) <- getCallStack'
     let (ss,es) = frameStacks frame
     setCallStack (frame { frameStacks = (Scope { scopeMem = mem, scopeLabels = labels, scopeMarks = 0}:ss,es) }:frames)
 
@@ -462,6 +467,13 @@ popVal = do
            setVStack vs
            return v
 
+popListVal :: Monad w => Eval a w [LSLValue a]
+popListVal = do
+    val <- popVal
+    case val of
+        (LVal l) -> pure l
+        _ -> throwError "list value required"
+
 peekVal :: Monad w => Eval a w (LSLValue a)
 peekVal = do
     vstack <- getVStack
@@ -474,20 +486,20 @@ valStackEmpty = (==[]) <$> getVStack
 
 elementStackEmpty :: Monad w => Eval a w Bool
 elementStackEmpty =
-    do (frame:cs) <- getCallStack
+    do (frame,cs) <- getCallStack'
        case frameStacks frame of
            (_,[]) -> return True
            _ -> return False
 
 popElement :: Monad w => Eval a w EvalElement
 popElement = do
-    (frame:frames) <- getCallStack
+    (frame,frames) <- getCallStack'
     let (ss,e:es) = frameStacks frame
     setCallStack (frame { frameStacks = (ss,es) }:frames)
     return e
 getEStack :: Monad w => Eval a w [EvalElement]
 getEStack = do
-    (frame:frames) <- getCallStack
+    (frame,frames) <- getCallStack'
     return $ snd $ frameStacks frame
 
 popMarks 0 = return ()
@@ -498,19 +510,19 @@ popMarks n = do
        _ -> popMarks n
 
 pushElement element =
-   do (frame:frames) <- getCallStack
+   do (frame,frames) <- getCallStack'
       let (ss,es) = frameStacks frame
       setCallStack (frame { frameStacks = (ss,element:es) }:frames)
 
 pushElements elements =
-    mapM pushElement elements >> return EvalIncomplete
+    mapM_ pushElement elements >> return EvalIncomplete
 
 callStackEmpty :: Monad w => Eval a w Bool
-callStackEmpty = getCallStack >>= return . null
+callStackEmpty = getCallStack <&> null
 
 popFrame :: Monad w => Eval a w ()
 popFrame =
-    do (f:cs) <- getCallStack
+    do (f,cs) <- getCallStack'
        stepMgr <- getStepManager
        let stepMgr' = popStepManagerFrame stepMgr
        setStepManager stepMgr'
@@ -545,18 +557,18 @@ getVar name =
 
 initVar1 :: (RealFloat a, Read a, Monad w) => String -> LSLType -> Maybe (LSLValue a) -> Eval a w ()
 initVar1 name t mval =
-    do (frame:frames) <- getCallStack
+    do (frame,frames) <- getCallStack'
        let (sc@Scope { scopeMem = m }:ss,es) = frameStacks frame
        let frame' = frame { frameStacks = (sc { scopeMem = initVar name t mval:m }:ss,es) }
        setCallStack (frame':frames)
 
 initVars1 :: (RealFloat a, Read a, Monad w) => [Var] -> [LSLValue a] -> Eval a w ()
 initVars1 vars vals =
-    foldM_ (\_ -> \ (Var n t, v) -> initVar1 n t $ Just v) () $ zip vars vals
+    foldM_ (\ _ (Var n t, v) -> initVar1 n t $ Just v) () $ zip vars vals
 
 unwindToLabel name =
     let f n =
-            do (frame:frames) <- getCallStack
+            do (frame,frames) <- getCallStack'
                let (ss,es) = frameStacks frame
                case ss of
                    [] -> throwError ("label " ++ name ++ " not found")
@@ -569,7 +581,7 @@ unwindToLabel name =
     in f 1
 
 modMark f = do
-    (frame:frames) <- getCallStack
+    (frame,frames) <- getCallStack'
     let (ss,es) = frameStacks frame
     case ss of
         [] -> return ()
@@ -606,12 +618,12 @@ evalSimple maxTick = do
         _ -> return (result,Nothing)
 
 setupSimple path globbindings args = do
-    setScriptImageName (concat (intersperse "." path))
+    setScriptImageName (intercalate "." path)
     updateGlobals globbindings
     (params,stmts,ctx) <- getEntryPoint path
     mem <- bindParmsForgiving params args
     initStacks
-    pushFrame (concat $ intersperse "." path) ctx Nothing
+    pushFrame (intercalate "." path) ctx Nothing
     pushScope mem $ labelBlocks stmts
     pushElements [EvMark,EvBlock stmts]
     setExecutionState Executing
@@ -629,7 +641,7 @@ setupSimple path globbindings args = do
               (Ctx _ (Handler name params stmts)) <- findHandler handlerName handlers
               return (ctxItems params,stmts, srcCtx name)
 
-incontext s f = either throwError return f
+incontext s = either throwError return
 
 evalScript :: (RealFloat a, Read a, Show a, Monad w) => LSLInteger -> [Event a] -> Eval a w [Event a]
 evalScript maxTick queue = do
@@ -680,12 +692,12 @@ evalScript maxTick queue = do
                 _ -> return queue
         SleepingTil i -> do
             tick <- getTick
-            if (tick >= i)
+            if tick >= i
                then setExecutionState Executing >> evalScript maxTick queue
                else return queue
         WaitingTil i -> do
             tick <- getTick
-            if (tick >= i)
+            if tick >= i
                 then setExecutionState Waiting >> evalScript maxTick queue
                 else return queue
         Halted -> return queue
@@ -722,18 +734,18 @@ eval' =
                    logMsg . ("return: " ++) . lslShowVal =<< peekVal
                    popAndCheck
                 EvBlock [] -> popScope >> eval'
-                EvMark -> modMark ((-)1) >> continue
+                EvMark -> modMark (1 -) >> continue
                 EvBlock (s:ss) -> pushElements [EvBlock ss,EvCtxStatement s]
                 EvCtxStatement s -> do
                    pushElement (EvStatement $ ctxItem s)
                    case srcCtx s of
-                       Just (SourceContext { srcTextLocation = txtl }) -> do
+                       Just SourceContext { srcTextLocation = txtl } -> do
                            brk <- checkBp bp
                            if brk then return $ BrokeAt bp else continue
                            where bp = mkBreakpoint (textName txtl) (textLine0 txtl) 0
                        Nothing -> continue
                 EvStatement (Return mexpr) -> pushElements [EvReturn,EvMexpr $ fromMCtx mexpr]
-                EvStatement (NullStmt) -> eval'
+                EvStatement NullStmt -> eval'
                 EvStatement (StateChange s) -> return $ EvalComplete $ Just s
                 EvStatement (Do expr) -> pushElements [EvDiscard,EvExpr $ ctxItem expr]
                 EvStatement (Decl (Var name t) Nothing) -> do
@@ -748,7 +760,7 @@ eval' =
                     let expr =  maybe (IntLit 1) ctxItem mexpr2
                     modMark (+1)
                     pushElement EvMark
-                    pushElement (EvLoop expr (mexpr3) stmt)
+                    pushElement (EvLoop expr mexpr3 stmt)
                     pushElement (EvExpr expr)
                     pushElements [EvDiscard, EvExpr (ListExpr mexpr1)]
                     continue
@@ -846,12 +858,12 @@ eval' =
                             pushElement (EvExpr (ListExpr exprs))  -- first evaluate the arguments
                             continue
                 EvCons -> do
-                    (LVal l) <- popVal
+                    l <- popListVal
                     val <- popVal
                     pushVal (LVal (val:l))
                     continue
                 EvCall name ctx parms stmts voidFunc -> do
-                    (LVal val) <- popVal -- should be the list of arguments
+                    val <- popListVal -- should be the list of arguments
                     logMsg ("call: " ++ renderCall name val)
                     pushFrame name ctx Nothing
                     pushScope [] $ labelBlocks stmts
@@ -877,8 +889,8 @@ eval' =
                           (LLKey,SVal s) -> KVal $ LSLKey s
                           (t, v) | t == typeOfLSLValue v -> v
                                  | otherwise -> error ("can't implicitly convert from " ++
-                                                       (show $ typeOfLSLValue v) ++
-                                                       " to " ++ (show t))
+                                                       show (typeOfLSLValue v) ++
+                                                       " to " ++ show t)
                     let varVal' = replaceLslValueComponent c varVal val'
                     setVar name varVal'
                     continue
@@ -893,7 +905,7 @@ eval' =
                     (v,LVal l2) -> LVal (v:l2)
                     (LVal l1, v) -> LVal (l1 ++ [v])
                     (SVal s1,SVal s2) -> SVal (s1 ++ s2)
-                    _ -> error ("invalid Add operands: " ++ (show val1) ++ ", " ++ (show val2))
+                    _ -> error ("invalid Add operands: " ++ show val1 ++ ", " ++ show val2)
                 EvSub -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1 - i2)
                     (IVal i1,FVal f2) -> FVal (fromInt i1 - f2)
@@ -901,73 +913,73 @@ eval' =
                     (FVal f1,FVal f2) -> FVal (f1 - f2)
                     (VVal x1 y1 z1,VVal x2 y2 z2) -> VVal (x1 - x2) (y1 - y2) (z1 - z2)
                     (RVal x1 y1 z1 s1,RVal x2 y2 z2 s2) -> RVal (x1 - x2) (y1 - y2) (z1 - z2) (s1 - s2)
-                    _ -> error ("cannot apply - operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply - operator to " ++ show val1 ++ " and " ++ show val2)
                 EvMul -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1*i2)
                     (IVal i1,FVal f2) -> FVal (fromInt i1 * f2)
                     (FVal f1,IVal i2) -> FVal (f1 * fromInt i2)
                     (FVal f1,FVal f2) -> FVal (f1 * f2)
-                    (v@(VVal _ _ _),IVal i) -> let f = fromInt i in vecMulScalar v f
-                    (v@(VVal _ _ _),FVal f) -> vecMulScalar v f
-                    (IVal i,v@(VVal _ _ _)) -> let f = fromInt i in vecMulScalar v f
-                    (FVal f,v@(VVal _ _ _)) -> vecMulScalar v f
-                    ((VVal x1 y1 z1),(VVal x2 y2 z2)) -> FVal $ x1 * x2 + y1 * y2 + z1 * z2
-                    (v@(VVal _ _ _),r@(RVal _ _ _ _)) -> rotMulVec r v
-                    (r1@(RVal _ _ _ _),r2@(RVal _ _ _ _)) -> rotMul r1 r2
-                    _ -> error ("cannot apply * operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (v@VVal {},IVal i) -> let f = fromInt i in vecMulScalar v f
+                    (v@VVal {},FVal f) -> vecMulScalar v f
+                    (IVal i,v@VVal {}) -> let f = fromInt i in vecMulScalar v f
+                    (FVal f,v@VVal {}) -> vecMulScalar v f
+                    (VVal x1 y1 z1,VVal x2 y2 z2) -> FVal $ x1 * x2 + y1 * y2 + z1 * z2
+                    (v@VVal {},r@RVal {}) -> rotMulVec r v
+                    (r1@RVal {},r2@RVal {}) -> rotMul r1 r2
+                    _ -> error ("cannot apply * operator to " ++ show val1 ++ " and " ++ show val2)
                 EvDiv -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1 `div` i2) -- TODO: how does SL handle divide by zero?
                     (IVal i1,FVal f2) -> FVal (fromInt i1 / f2)
                     (FVal f1,IVal i2) -> FVal (f1 / fromInt i2)
                     (FVal f1,FVal f2) -> FVal (f1/f2)
-                    (v@(VVal _ _ _),IVal i) -> let f = 1.0 / fromInt i in vecMulScalar v f
-                    (v@(VVal _ _ _),FVal f) -> vecMulScalar v (1/f)
-                    (v@(VVal _ _ _),r@(RVal _ _ _ _)) -> rotMulVec (invRot r) v
-                    (r1@(RVal _ _ _ _),r2@(RVal _ _ _ _)) -> rotMul r1 $ invRot r2
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (v@VVal {},IVal i) -> let f = 1.0 / fromInt i in vecMulScalar v f
+                    (v@VVal {},FVal f) -> vecMulScalar v (1/f)
+                    (v@VVal {},r@RVal {}) -> rotMulVec (invRot r) v
+                    (r1@RVal {},r2@RVal {}) -> rotMul r1 $ invRot r2
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvMod -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1 `mod` i2)
-                    (v1@(VVal _ _ _),v2@(VVal _ _ _)) -> v1 `vcross` v2
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (v1@VVal {},v2@VVal {}) -> v1 `vcross` v2
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvBAnd -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1 .&. i2)
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvBOr -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1 .|. i2)
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvBXor -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> IVal (i1 `xor` i2)
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvAnd -> evalBinary $ \ val1 val2 -> case (val1,val2) of
-                    (IVal i1,IVal i2) -> IVal (if (toBool i1 && toBool i2) then 1 else 0)
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (IVal i1,IVal i2) -> IVal (if toBool i1 && toBool i2 then 1 else 0)
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvOr -> evalBinary $ \ val1 val2 -> case (val1,val2) of
-                    (IVal i1,IVal i2) -> IVal (if (toBool i1 || toBool i2) then 1 else 0)
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (IVal i1,IVal i2) -> IVal (if toBool i1 || toBool i2 then 1 else 0)
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvLt -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> toLslBool $ i1 < i2
                     (FVal f1,FVal f2) -> toLslBool $ f1 < f2
                     (FVal f1,IVal i2) -> toLslBool $ f1 < fromInt i2
                     (IVal i1,FVal f2) -> toLslBool $ fromInt i1 < f2
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvLe -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> toLslBool $ i1 <= i2
                     (FVal f1,FVal f2) -> toLslBool $ f1 <= f2
                     (FVal f1,IVal i2) -> toLslBool $ f1 <= fromInt i2
                     (IVal i1,FVal f2) -> toLslBool $ fromInt i1 <= f2
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvGt -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> toLslBool $ i1 > i2
                     (FVal f1,FVal f2) -> toLslBool $ f1 > f2
                     (FVal f1,IVal i2) -> toLslBool $ f1 > fromInt i2
                     (IVal i1,FVal f2) -> toLslBool $ fromInt i1 > f2
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvGe -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (IVal i1,IVal i2) -> toLslBool $ i1 >= i2
                     (FVal f1,FVal f2) -> toLslBool $ f1 >= f2
                     (FVal f1,IVal i2) -> toLslBool $ f1 >= fromInt i2
                     (IVal i1,FVal f2) -> toLslBool $ fromInt i1 >= f2
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvEq -> evalBinary $ \ val1 val2 -> case (val1,val2) of
                     (LVal l1, LVal l2) -> toLslBool $ length l1 == length l2 -- special case of LSL weirdness
                     (SVal s, KVal k) -> toLslBool $ s == unLslKey k
@@ -983,22 +995,22 @@ eval' =
                     (IVal i1,FVal f2) -> toLslBool $ fromInt i1 /= f2
                     (v1,v2) -> toLslBool $ v1 /= v2
                 EvShiftL -> evalBinary $ \ val1 val2 -> case (val1,val2) of
-                    (IVal i1,IVal i2) -> IVal (i1 `shiftL` (fromInt i2))
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (IVal i1,IVal i2) -> IVal (i1 `shiftL` fromInt i2)
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvShiftR -> evalBinary $ \ val1 val2 -> case (val1,val2) of
-                    (IVal i1,IVal i2) -> IVal (i1 `shiftR` (fromInt i2))
-                    _ -> error ("cannot apply operator to " ++ (show val1) ++ " and " ++ (show val2))
+                    (IVal i1,IVal i2) -> IVal (i1 `shiftR` fromInt i2)
+                    _ -> error ("cannot apply operator to " ++ show val1 ++ " and " ++ show val2)
                 EvNot -> do
                     val <- popVal
                     pushVal $ case val of
                         (IVal i) -> IVal (if i == 0 then 1 else 0)
-                        _ -> error ("cannot apply operator to " ++ (show val))
+                        _ -> error ("cannot apply operator to " ++ show val)
                     continue
                 EvBInv -> do
                     val <- popVal
                     pushVal $ case val of
                         (IVal i) -> IVal $ complement i
-                        _ -> error ("cannot apply operator to " ++ (show val))
+                        _ -> error ("cannot apply operator to " ++ show val)
                     continue
                 EvNeg -> do
                     val <- popVal
@@ -1007,7 +1019,7 @@ eval' =
                         (FVal f) -> FVal (-f)
                         (VVal x y z) -> VVal (-x) (-y) (-z)
                         (RVal x y z s) -> RVal (-x) (-y) (-z) (-s)
-                        _ -> error ("cannot apply operator to " ++ (show val))
+                        _ -> error ("cannot apply operator to " ++ show val)
                     continue
                 EvCast t -> do
                     -- TODO: what are the valid typecasts?
@@ -1028,8 +1040,8 @@ eval' =
                         (LLRot,SVal s) -> parseRotation s
                         (LLKey,SVal s) -> KVal $ LSLKey s
                         (LLKey,KVal s) -> KVal s
-                        (LLVector, v@(VVal _ _ _)) -> v
-                        (LLRot, v@(RVal _ _ _ _)) -> v
+                        (LLVector, v@VVal {}) -> v
+                        (LLRot, v@RVal {}) -> v
                         (LLList, LVal l) -> LVal l
                         (LLList,v) -> LVal [v]
                     continue
@@ -1043,12 +1055,12 @@ revRot s z y x = RVal x y z s
 revVec z y x = VVal x y z
 popF = toFloat <$> popVal
 
-trueCondition (IVal i) = (i /= 0)
-trueCondition (FVal f) = (f /= 0)
+trueCondition (IVal i) = i /= 0
+trueCondition (FVal f) = f /= 0
 trueCondition (SVal s) = not (null s)
 trueCondition (LVal l) = not (null l)
-trueCondition v@(VVal _ _ _) = v /= llcZeroVector
-trueCondition r@(RVal _ _ _ _) = r /= llcZeroRotation
+trueCondition v@VVal {} = v /= llcZeroVector
+trueCondition r@RVal {} = r /= llcZeroRotation
 trueCondition (KVal k) = k /= nullKey &&
     case map tr $ unLslKey k of
         "ffffffff-ffff-ffff-ffff-ffffffffffff" -> True
@@ -1067,7 +1079,7 @@ pushBinary evalElement expr1 expr2 = pushElements [evalElement,EvExpr $ ctxItem 
 pushModBy var evalElement expr = pushElements [EvSet $ ctxVr2Vr var,evalElement,EvGet $ ctxVr2Vr var,EvExpr expr]
 
 evalPredef' name = do
-    (LVal args) <- popVal
+    args <- popListVal
     let args' = convertArgs name args
     key <- getMyPrimKey
     sid <- getScriptName

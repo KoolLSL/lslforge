@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XDeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module Language.Lsl.Internal.Pragmas(Pragma(..)) where
 
 import Data.Data(Data,Typeable)

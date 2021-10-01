@@ -1,11 +1,11 @@
-{-# LANGUAGE FlexibleInstances,
-             NoMonomorphismRestriction,
-             GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses,
-             TypeSynonymInstances,
-             TemplateHaskell
-  #-}
+{-# LANGUAGE FlexibleInstances, NoMonomorphismRestriction, GeneralizedNewtypeDeriving, MultiParamTypeClasses, TemplateHaskell #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+
+
+
+
+
+
 module Language.Lsl.Internal.WorldStateTypes where
 
 import Control.Applicative
@@ -174,7 +174,7 @@ instance Monad m => Show (Predef m) where
 
 -- an ErrorT/StateT/m Monad stack for the World.  The type is parameterized by
 -- the innermost monad...
-newtype WorldE m a = WorldE { unWorldE :: ExceptT String ((StateT (World m) m)) a }
+newtype WorldE m a = WorldE { unWorldE :: ExceptT String (StateT (World m) m) a }
     deriving (Monad,MonadPlus)
 
 instance Monad m => MonadState (World m) (WorldE m) where

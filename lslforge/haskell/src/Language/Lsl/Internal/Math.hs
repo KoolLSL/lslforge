@@ -24,12 +24,12 @@ module Language.Lsl.Internal.Math(
     axisAngleFromRotation) where
 
 -- import Debug.Trace
-dist3d2 (x1,y1,z1) (x2,y2,z2) = ((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
+dist3d2 (x1,y1,z1) (x2,y2,z2) = (x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2
 dist3d v0 v1 = sqrt $ dist3d2 v0 v1
 
 dot3d (x1,y1,z1) (x2,y2,z2) = x1 * x2 + y1 * y2 + z1 * z2
 
-mag3d2 (x,y,z) = (x^2 + y^2 + z^2)
+mag3d2 (x,y,z) = x^2 + y^2 + z^2
 mag3d v = sqrt $ mag3d2 v
 
 norm3d v@(x,y,z) = let mag = mag3d v in (x/mag,y/mag,z/mag)
@@ -47,21 +47,21 @@ quaternionToMatrix (x,y,z,s) =
 
 -- reversing the conversion:
 matrixToQuaternion ((r00,r01,r02),(r10,r11,r12),(r20,r21,r22)) =
-    (sign (r21 - r12) * (sqrt (max 0 (1 + r00 - r11 - r22 ))) / 2,
-     sign (r02 - r20) * (sqrt (max 0 (1 - r00 + r11 - r22))) / 2,
-     sign (r10 - r01) * (sqrt (max 0 (1 - r00 - r11 + r22 ))) / 2,
-     (sqrt (max 0  (1 + r00 + r11 + r22))) / 2)
+    (sign (r21 - r12) * sqrt (max 0 (1 + r00 - r11 - r22 )) / 2,
+     sign (r02 - r20) * sqrt (max 0 (1 - r00 + r11 - r22)) / 2,
+     sign (r10 - r01) * sqrt (max 0 (1 - r00 - r11 + r22 )) / 2,
+     sqrt (max 0  (1 + r00 + r11 + r22)) / 2)
 
 quaternionMultiply (x1,y1,z1,s1) (x2,y2,z2,s2) =
-    ((s1 * x2 + x1 * s2 + y1 * z2 - z1 * y2),
-     (s1 * y2 - x1 * z2 + y1 * s2 + z1 * x2),
-     (s1 * z2 + x1 * y2 - y1 * x2 + z1 * s2),
-     (s1 * s2 - x1*x2 - y1 * y2 - z1 * z2))
+    (s1 * x2 + x1 * s2 + y1 * z2 - z1 * y2,
+     s1 * y2 - x1 * z2 + y1 * s2 + z1 * x2,
+     s1 * z2 + x1 * y2 - y1 * x2 + z1 * s2,
+     s1 * s2 - x1*x2 - y1 * y2 - z1 * z2)
 
 rot3d vec rotation =
-    (quaternionToMatrix rotation) `matMulVec` vec
+    quaternionToMatrix rotation `matMulVec` vec
     where matMulVec ((a1,b1,c1),(a2,b2,c2),(a3,b3,c3)) (a,b,c) =
-              ((a1 * a + b1 * b + c1 * c),(a2 * a + b2 * b + c2 * c),(a3 * a + b3 * b + c3 * c))
+              (a1 * a + b1 * b + c1 * c,a2 * a + b2 * b + c2 * c,a3 * a + b3 * b + c3 * c)
 
 invertQuaternion (x,y,z,s) = (-x,-y,-z,s)
 
@@ -92,7 +92,7 @@ quaternionToRotations rotOrder lh quat=
         mult = if lh then -1 else 1
         sinTheta2 = 2 * (p0 * p2 + mult * p1 * p3)
         (sinTheta2',singularity) =
-            if (abs sinTheta2 >= 0.9999999) then (sign sinTheta2,True) else (sinTheta2,False)
+            if abs sinTheta2 >= 0.9999999 then (sign sinTheta2,True) else (sinTheta2,False)
         theta2 = asin sinTheta2'
         theta3 = if singularity then atan2 (p3*p0 + p1*p2) (0.5 - p1*p1 - p3*p3)
                  else atan2 (2 * (p0 * p3 - mult * p1 * p2)) (1 - 2 * (p2 * p2 + p3 * p3))
@@ -100,7 +100,7 @@ quaternionToRotations rotOrder lh quat=
                  else atan2 (2 * ( p0 * p1 - mult * p2 * p3)) (1 - 2 * (p1 * p1 + p2 * p2))
     in (theta1,theta2,theta3)
 
-cross (x1,y1,z1) (x2,y2,z2) = ((y1 * z2 - z1 * y2),(z1 * x2 - x1 * z2),(x1 * y2 - y1 * x2))
+cross (x1,y1,z1) (x2,y2,z2) = (y1 * z2 - z1 * y2,z1 * x2 - x1 * z2,x1 * y2 - y1 * x2)
 
 rotationBetween v0 v1 =
     let (v0',v1') = (norm3d v0,norm3d v1)

@@ -17,7 +17,7 @@ import Language.Lsl.Internal.XmlCreate(emit)
 
 execElement = tag "test-descriptor" >> (,) <$> req "source_files" sources <*> req "tests" tests
 
-testExecutionDescriptionFromXML' input = xmlAccept execElement input
+testExecutionDescriptionFromXML' = xmlAccept execElement
 
 main2 :: IO ()
 main2 =
@@ -45,5 +45,5 @@ cmds = [cmd "exec-continue" ExecContinue, cmd "exec-step" ExecStep,
 cmd s f = tagit s $ f <$> def "breakpoints" [] bps
 
 emitTestEvent (TestComplete testResult) = emit "test-complete" [] [emitTestResult testResult]
-emitTestEvent (AllComplete) = emit "all-complete" [] []
+emitTestEvent AllComplete = emit "all-complete" [] []
 emitTestEvent (TestSuspended info) = emit "test-suspended" [] [emitExecutionInfo info]

@@ -1,4 +1,6 @@
-{-# OPTIONS_GHC -XFlexibleContexts -XNoMonomorphismRestriction -XTemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Language.Lsl.Internal.CompilationServer where
 
 import Control.Monad.Except
@@ -58,7 +60,7 @@ parseErrorToErrInfo pe =
                 "expecting" "unexpected" "end of input" (errorMessages pe))
     in ErrInfo (Just x) y
 
-sourcePosToTextLocation pos = (TextLocation line col line col name)
+sourcePosToTextLocation pos = TextLocation line col line col name
     where line = sourceLine pos
           col = sourceColumn pos
           name = sourceName pos
@@ -148,8 +150,8 @@ toLib = libFromAugLib . M.toList
 
 handler :: CState -> String -> IO (CState, String)
 handler s0 input = case parse elemDescriptor input of
-   Left s -> return $ (s0, E.emit "error" [] [showString (E.xmlEscape s)] "")
-   Right Nothing -> return $ (s0, E.emit "error" [] [showString ("unexpected root element")] "")
+   Left s -> return (s0, E.emit "error" [] [showString (E.xmlEscape s)] "")
+   Right Nothing -> return (s0, E.emit "error" [] [showString "unexpected root element"] "")
    Right (Just command) -> handleCommand s0 command
 
 handleInit :: Bool -> CState -> (Bool,[(String,String)],[(String,String)]) -> IO (CState, String)
@@ -167,7 +169,7 @@ handleCommand cs (UpdateScript scriptInfo) = do
     renderScriptsToFiles True (optimize cs',M.toList $ modulePaths cs',[scriptInfo]) [c]
     return (cs',xmlSerialize Nothing (FullSourceValidation $ validationSummary (M.toList $ modules cs', M.toList $ scripts cs')) "")
 handleCommand cs (UpdateModule minfo) = do -- this doesn't quite do what it says it does (yet)
-    let srcInfo = (optimize cs, M.toList (M.insert (fst minfo) (snd minfo) (modulePaths cs)), M.toList (scriptPaths cs))
+    let srcInfo = (optimize cs, M.toList (uncurry M.insert minfo (modulePaths cs)), M.toList (scriptPaths cs))
     handleInit False cs srcInfo
 handleCommand cs (RemoveModule minfo) = do
     let srcInfo = (optimize cs, M.toList (M.delete (fst minfo) (modulePaths cs)),M.toList (scriptPaths cs))
@@ -202,9 +204,9 @@ handleCommand cs (CheckScript (CodeElement name text)) =
 -- take the detail out of a script, leaving just the skeleton...
 simplifyScript :: LSLScript -> LSLScript
 simplifyScript (LSLScript _ gs ss) = LSLScript "" (map simpG gs) (map simpCS ss)
-    where simpCS (Ctx sc s) = (Ctx (simpSC sc) (simpS s))
-          simpS (State cn chs) = (State (simpCN cn) (map simpCH chs))
-          simpCH (Ctx sc h) = (Ctx (simpSC sc) (simpH h))
+    where simpCS (Ctx sc s) = Ctx (simpSC sc) (simpS s)
+          simpS (State cn chs) = State (simpCN cn) (map simpCH chs)
+          simpCH (Ctx sc h) = Ctx (simpSC sc) (simpH h)
           simpH (Handler cn _ _) = Handler (simpCN cn) [] []
 
 -- take the detail out of a script, leaving just the skeleton...
@@ -214,12 +216,12 @@ simplifyModule (LModule gs _) = LModule (map simpG gs) []
 simpG (GV cv _) = GV (simpCV cv) Nothing
 simpG (GF cf) = GF (simpCF cf)
 simpG (GI cn _ _) = GI (simpCN cn) [] ""
-simpCV (Ctx sc v) = (Ctx (simpSC sc) v)
-simpCF (Ctx sc f) = (Ctx (simpSC sc) (simpF f))
-simpCN (Ctx sc n) = (Ctx (simpSC sc) n)
+simpCV (Ctx sc v) = Ctx (simpSC sc) v
+simpCF (Ctx sc f) = Ctx (simpSC sc) (simpF f)
+simpCN (Ctx sc n) = Ctx (simpSC sc) n
 simpSC Nothing = Nothing
-simpSC (Just (SourceContext tl _ _ _)) = (Just (SourceContext tl "" "" []))
-simpF (Func fd _) = (Func fd [])
+simpSC (Just (SourceContext tl _ _ _)) = Just (SourceContext tl "" "" [])
+simpF (Func fd _) = Func fd []
 
 compilationServer :: IO ()
 compilationServer = processLinesSIOB emptyCState "quit" handler

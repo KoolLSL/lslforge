@@ -5,4 +5,4 @@ module Language.Lsl.Internal.CodeHelper(renderCall) where
 import Data.List(intersperse)
 import Language.Lsl.Internal.Type(lslShowVal)
 
-renderCall n a = concat ([n, "("] ++ (intersperse "," $ map lslShowVal a) ++ [")"])
+renderCall n a = concat ([n, "("] ++ intersperse "," (map lslShowVal a) ++ [")"])

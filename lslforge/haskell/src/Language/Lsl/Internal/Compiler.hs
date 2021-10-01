@@ -72,7 +72,7 @@ formatCompilationSummary (augLib, scripts) =
 
 formatScriptCompilationSummary (name,(result,_)) =
     emit "item"
-        ([emit "name" [showString name]] ++
+        (emit "name" [showString name] :
         case result of
             Left (CodeErrs errs) -> [emit "status" [emit "ok" [showString "false"], emit "errs" (map formatErr errs)]]
             Right (CompiledLSLScript _ globals funcs states) ->
@@ -82,7 +82,7 @@ formatScriptCompilationSummary (name,(result,_)) =
 
 formatModuleCompilationSummary (name,result) =
     emit "item"
-        ([emit "name" [showString name]] ++
+        (emit "name" [showString name] :
         case result of
             Left (CodeErrs errs) -> [emit "status" [emit "ok" [showString "false"], emit "errs" (map formatErr errs)]]
             Right (LModule globdefs freevars,(globals,_)) ->
@@ -120,7 +120,7 @@ formatErr (ctx,msg) =
     emit "itemError" [formatCtx ctx , emit "msg" [showString (xmlEscape msg)]]
 
 formatCtx Nothing = id
-formatCtx (Just (SourceContext { srcTextLocation = TextLocation { textLine0 = l0, textColumn0 = c0, textLine1 = l1, textColumn1 = c1, textName = n }})) =
+formatCtx (Just SourceContext { srcTextLocation = TextLocation { textLine0 = l0, textColumn0 = c0, textLine1 = l1, textColumn1 = c1, textName = n }}) =
     emit "errLoc" (map (\ (x,y) -> emit x [showString y])
                    [("lineStart",show l0),
                    ("columnStart",show c0),
@@ -140,7 +140,7 @@ renderScriptsToFiles force srcInfo@(opt,libTable,pathTable) compiledScripts =
          [path | (Just path,Left _) <- map (\ (name,(vs,_)) -> (lookup name pathTable,vs)) compiledScripts]
         checkUpdate :: (String,(Validity CompiledLSLScript,[String])) -> IO (Maybe (String,FilePath,CompiledLSLScript))
         checkUpdate (name,(Right s,deps)) = case lookup name pathTable of
-            Just p -> ((name,p,s) <$) <$> ((guard::Bool->Maybe ()) <$> ((force ||) <$> makeCheck (p -<.> "lsl") (p:(mapMaybe (flip lookup libTable) deps))))
+            Just p -> ((name,p,s) <$) <$> ((guard::Bool->Maybe ()) <$> ((force ||) <$> makeCheck (p -<.> "lsl") (p:mapMaybe (`lookup` libTable) deps)))
             Nothing -> return Nothing
         checkUpdate (_,(Left _,_)) = return Nothing
     in do
@@ -149,19 +149,19 @@ renderScriptsToFiles force srcInfo@(opt,libTable,pathTable) compiledScripts =
         let stamp = "\n// " ++ formatTime defaultTimeLocale "%F %H:%M:%S" t
         mapM_ (\ (name,path,script) ->
             renderScriptToFile opt (name ++ " " ++ stamp) path script) scriptsToRender
-        mapM_ (removeOutputScript) scriptsToRemove
+        mapM_ removeOutputScript scriptsToRemove
 
 makeCheck :: FilePath -> [FilePath] -> IO Bool
 makeCheck p ps =
     (getModificationTime p >>= anyNewerFile ps) `catch` (return . isDoesNotExistError)
 anyNewerFile :: [FilePath] -> UTCTime -> IO Bool
-anyNewerFile ps t = anyM (\p -> (> t) <$> getModTime p) ps
+anyNewerFile ps t = anyM (fmap (> t) . getModTime) ps
 getModTime :: FilePath -> IO UTCTime
 getModTime p = getModificationTime p <|> pure (UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0))
 
 renderScriptToFile opt stamp path script =
    let newPath = replaceExtension path ".lsl"
-       options = if opt then [OptimizationInlining] else []
+       options = [OptimizationInlining | opt]
        text = renderCompiledScript stamp (optimizeScript options script) in B.writeFile newPath (UTF8.fromString text)
 
 removeOutputScript path =

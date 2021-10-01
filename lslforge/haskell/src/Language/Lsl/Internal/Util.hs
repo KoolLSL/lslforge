@@ -1,4 +1,7 @@
-{-# OPTIONS_GHC -fwarn-unused-binds -XNoMonomorphismRestriction -XFlexibleContexts #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fwarn-unused-binds #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.Util (
     LSLInteger,
     mlookup,
@@ -38,7 +41,7 @@ module Language.Lsl.Internal.Util (
     whenJust
     ) where
 
-import Control.Monad(liftM,when,MonadPlus(..))
+import Control.Monad(when,MonadPlus(..))
 import Control.Monad.Except(MonadError(..))
 import qualified Control.Monad.Fail as F
 import Data.Char
@@ -79,7 +82,7 @@ safeIndex xs i = foldl mplus Nothing [ Just v | (j,v) <- zip [0..] xs, j == i]
 required msg = maybe (throwError msg) return
 
 tuplify [] = []
-tuplify (_:[]) = []
+tuplify [_] = []
 tuplify (a:b:rest) = (a,b) : tuplify rest
 
 readM s = case reads s of
@@ -90,7 +93,7 @@ ctx s (Left s') = fail (s ++ ": " ++ s' )
 ctx _ (Right v) = return v
 
 
-whenJust :: (Monad m) => (Maybe a) -> (a -> m ()) -> m ()
+whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
 whenJust Nothing _ = return ()
 whenJust (Just v) action = action v
 
@@ -98,7 +101,7 @@ whenJust (Just v) action = action v
 lookupM :: (F.MonadFail m, Eq a, Show a) => a -> [(a,b)] -> m b
 lookupM x l =
    case lookup x l of
-       Nothing -> F.fail ((show x) ++ " not found")
+       Nothing -> F.fail (show x ++ " not found")
        Just y -> return y
 
 -- monadified find
@@ -121,7 +124,7 @@ filtMapM f (x:xs) =
     do  r <- f x
         case r of
             Nothing -> filtMapM f xs
-            Just y -> liftM (y:) (filtMapM f xs)
+            Just y -> fmap (y:) (filtMapM f xs)
 
 lookupByIndex :: (Integral a, Show a, F.MonadFail m) => a -> [b] -> m b
 lookupByIndex i l = lookupM i $ zip [0..] l
@@ -144,7 +147,7 @@ cut start end src = (take start src, drop end src)
 elemAtM :: (Monad m) => Int -> [a] -> m a
 elemAtM index list =
     if index >= 0 && index < length list then return (list !! index)
-    else fail ("index " ++ (show index) ++ " out of range")
+    else fail ("index " ++ show index ++ " out of range")
 
 unescape = unEscapeString
 
@@ -190,9 +193,9 @@ processLinesSIOB state term f = B.getContents >>= go state . B.lines
         escape = B.pack  . escapeURIString isUnescapedInURI
         unescapeB s | B.length s == 0 = ""
                     | otherwise = case (B.unpack (B.take 3 s), B.drop 3 s) of
-                        ('%':x1:x2:[],s') | isHexDigit x1 && isHexDigit x2 ->
+                        (['%', x1, x2],s') | isHexDigit x1 && isHexDigit x2 ->
                             chr (digitToInt x1 * 16 + digitToInt x2) : unescapeB s'
-                        _ -> B.head s : (unescapeB (B.tail s))
+                        _ -> B.head s : unescapeB (B.tail s)
 
 -- TODO: fix this definition!
 fac :: Integer -> Integer
@@ -213,9 +216,9 @@ generatePermutation l  i =
         if i < fac n then
             let modulus = fac (n - 1)
                 ix :: Int
-                ix = fromInteger $ (i `div` modulus) in
+                ix = fromInteger (i `div` modulus) in
             case splitAt ix l of
-                (xs,y:ys) -> y : (generatePermutation (xs ++ ys) (i `mod` modulus))
+                (xs,y:ys) -> y : generatePermutation (xs ++ ys) (i `mod` modulus)
                 _ -> error ""
         else error "no such permutation!!!"
 

@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeOperators,
-    GeneralizedNewtypeDeriving, MultiParamTypeClasses, TypeSynonymInstances,
-    TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeOperators, MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+
+
 module Language.Lsl.Internal.WorldState(
     durationToTicks,      -- :: (RealFrac t, Integral b) => t -> b
     dyn,                  -- ::
@@ -132,7 +132,7 @@ itemNameKey = inventoryItemNameKey . inventoryItemIdentification
 
 getActualPrimScripts k = do
     scriptNames <- map (fst . itemNameKey) <$> getPrimScripts k
-    allScripts <- M.toList <$> getM (worldScripts)
+    allScripts <- M.toList <$> getM worldScripts
     return [ s | s@((pk,sn),_) <- allScripts,pk == k && sn `elem` scriptNames ]
 
 getPrimLinkNum pk = do
@@ -154,26 +154,25 @@ getPrimRegion _ = return (0 :: LSLInteger, 0 :: LSLInteger)
 getPos pkey = runErrPrim pkey (VVal 0.0 0.0 0.0)
     (vec2VVal <$> (getRootPrim pkey >>= getObjectPosition))
 
-runErrFace k i defaultVal = runAndLogIfErr
-    ("face " ++ (show i) ++ " or prim " ++ unLslKey k ++ " not found") defaultVal
+runErrFace k i = runAndLogIfErr
+    ("face " ++ show i ++ " or prim " ++ unLslKey k ++ " not found")
 
 getPrimFaceAlpha k i = getM (faceAlpha.lli (fromInt i).primFaces.wprim k)
 getPrimFaceColor k i = getM (faceColor.lli (fromInt i).primFaces.wprim k)
 getPrimFaceTextureInfo k i = getM (faceTextureInfo.lli (fromInt i).primFaces.wprim k)
 
-runErrPrim k defaultVal =
-    runAndLogIfErr ("prim " ++ unLslKey k ++ " not found") defaultVal
+runErrPrim k = runAndLogIfErr ("prim " ++ unLslKey k ++ " not found")
 
 setPrimInventory k v = primInventory.wprim k =: v
 
 updatePrimFace k i f = (primFaces.wprim k) `modM_` update
     where update = zipWith (\ index face ->
-            if (index == i) then f face else face) [0..]
+            if index == i then f face else face) [0..]
 
 setPrimFaceAlpha k i v = runErrFace k i () $ updatePrimFace k i (setI faceAlpha v)
 setPrimFaceColor k i v = runErrFace k i () $ updatePrimFace k i (setI faceColor v)
 
-isSensorEvent (SensorEvent {}) = True
+isSensorEvent SensorEvent {} = True
 isSensorEvent _ = False
 
 takeWQ :: LSLInteger -> WorldEventQueue -> (Maybe WorldEventType,WorldEventQueue)
@@ -305,7 +304,7 @@ findTexture pk id = do
     case findByInvName id textures of
         Just item -> return $ itemKey item
         Nothing -> do
-            result <- return $ findTextureAsset id
+            let result = findTextureAsset id
             case result of
                 Nothing -> throwError ("cannot find texture " ++ id)
                 Just item -> return $ itemKey item
