@@ -1,8 +1,9 @@
-{-# OPTIONS_GHC -XTemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Language.Lsl.Internal.AccessGenerator(genAccessorsForType,genMAccessorsForType) where
 
 import Language.Haskell.TH
 import Control.Monad.State
+import Data.Functor ((<&>))
 
 genAccessors (ConT nm) = genAccessorsForType nm
 genAccessors _ = fail "can't generate accessors for specified type"
@@ -14,13 +15,13 @@ genAccessorsForType nm = do
         _ -> fail $ "can't generate accessors for specified name: " ++ show nm
 
 generateAccessorsForDec (DataD _ _ _ _ [con] _) = generateAccessorsForCon con
-generateAccessorsForDec (DataD _ _ _ _ _ _) = fail "can't generate accessors for data type with multiple constructors"
+generateAccessorsForDec DataD {} = fail "can't generate accessors for data type with multiple constructors"
 generateAccessorsForDec _ = fail "can only generate accessors for 'data' types (not even newtypes)"
 
 generateAccessorsForCon (RecC _ vs) = generateAccessorsForSelectors vs
 generateAccessorsForCon _ = fail "can only generate accessors for constructors with record selectors (and not quantified constructors)"
 
-generateAccessorsForSelectors vs = mapM generateAccessorForSelector vs
+generateAccessorsForSelectors = mapM generateAccessorForSelector
 generateAccessorForSelector (nm,_,_) =
     let nm' = mkName ("set'" ++ nameBase nm) in do
         nm0 <- newName "x"
@@ -37,14 +38,14 @@ genMAccessorsForType nm = do
         _ -> fail $ "can't generate accessors for specified name: " ++ show nm
 
 generateMAccessorsForDec (DataD _ _ _ _ [con] _) = generateMAccessorsForCon con
-generateMAccessorsForDec (DataD _ _ _ _ _ _) = fail "can't generate accessors for data type with multiple constructors"
+generateMAccessorsForDec DataD {} = fail "can't generate accessors for data type with multiple constructors"
 generateMAccessorsForDec _ = fail "can only generate accessors for 'data' types (not even newtypes)"
 
 generateMAccessorsForCon (RecC _ vs) = generateMAccessorsForSelectors vs
 generateMAccessorsForCon _ = fail "can only generate accessors for constructors with record selectors (and not quantified constructors)"
 
 generateMAccessorsForSelectors vs =
-    mapM generateMAccessorForSelector vs >>= return . concat
+    mapM generateMAccessorForSelector vs <&> concat
 
 generateMAccessorForSelector (nm,_,_) =
     let nmPut' = mkName ("put'" ++ nameBase nm)
@@ -57,9 +58,9 @@ generateMAccessorForSelector (nm,_,_) =
     in do
         nm0 <- newName "x"
         nm1 <- newName "s"
-        return [(FunD nmGet' [Clause [] (NormalB (AppE (AppE (VarE nmBind) (VarE nmGet)) (AppE (AppE (VarE nmCompose) (VarE nmReturn)) (VarE nm)))) []]),
-                (FunD nmPut' [Clause [VarP nm0]
+        return [FunD nmGet' [Clause [] (NormalB (AppE (AppE (VarE nmBind) (VarE nmGet)) (AppE (AppE (VarE nmCompose) (VarE nmReturn)) (VarE nm)))) []],
+                FunD nmPut' [Clause [VarP nm0]
                     (NormalB
                         -- get >>= \ s -> put (s { nm = nm0 })
                         (AppE (AppE (VarE nmBind) (VarE nmGet)) (LamE [VarP nm1] (AppE (VarE nmPut) (RecUpdE (VarE nm1) [(nm,VarE nm0)]))))
-                    ) []])]
+                    ) []]]

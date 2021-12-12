@@ -177,7 +177,7 @@ makeTokenParser languageDef
                       <?> "literal string")
 
     -- stringChar :: CharParser st (Maybe Char)
-    stringChar      =   do{ c <- stringLetter; return (Just c) }
+    stringChar      =   do{ Just <$> stringLetter; }
                     <|> stringEscape
                     <?> "string character"
 
@@ -186,7 +186,7 @@ makeTokenParser languageDef
     stringEscape    = do{ char '\\'
                         ;     do{ escapeGap  ; return Nothing }
                           <|> do{ escapeEmpty; return Nothing }
-                          <|> do{ esc <- escapeCode; return (Just esc) }
+                          <|> do{ Just <$> escapeCode; }
                         }
 
     escapeEmpty     = char '&'
@@ -223,7 +223,7 @@ makeTokenParser languageDef
 
 
     -- escape code tables
-    escMap          = zip ("abfnrtv\\\"\'") ("\a\b\f\n\r\t\v\\\"\'")
+    escMap          = zip "abfnrtv\\\"\'" "\a\b\f\n\r\t\v\\\"\'"
     asciiMap        = zip (ascii3codes ++ ascii2codes) (ascii3 ++ ascii2)
 
     ascii2codes     = ["BS","HT","LF","VT","FF","CR","SO","SI","EM",
@@ -243,7 +243,7 @@ makeTokenParser languageDef
     -- Numbers
     -----------------------------------------------------------
     -- naturalOrFloat :: CharParser st (Either Integer Double)
-    naturalOrFloat  = lexeme (natFloat) <?> "number"
+    naturalOrFloat  = lexeme natFloat <?> "number"
 
     float           = lexeme floating   <?> "float"
     integer         = lexeme int        <?> "integer"
@@ -283,7 +283,7 @@ makeTokenParser languageDef
                         }
                     <|>
                       do{ expo <- exponent'
-                        ; return ((fromInteger n)*expo)
+                        ; return (fromInteger n*expo)
                         }
 
     fraction        = do{ char '.'
@@ -307,8 +307,7 @@ makeTokenParser languageDef
 
     -- integers and naturals
     int             = do{ f <- lexeme sign
-                        ; n <- nat
-                        ; return (f n)
+                        ; f <$> nat
                         }
 
     -- sign            :: CharParser st (Integer -> Integer)
@@ -346,13 +345,13 @@ makeTokenParser languageDef
     operator =
         lexeme $ try $
         do{ name <- oper
-          ; if (isReservedOp name)
+          ; if isReservedOp name
              then unexpected ("reserved operator " ++ show name)
              else return name
           }
 
     oper =
-        do{ c <- (opStart languageDef)
+        do{ c <- opStart languageDef
           ; cs <- many (opLetter languageDef)
           ; return (c:cs)
           }
@@ -387,7 +386,7 @@ makeTokenParser languageDef
     identifier =
         lexeme $ try $
         do{ name <- ident
-          ; if (isReservedName name)
+          ; if isReservedName name
              then unexpected ("reserved word " ++ show name)
              else return name
           }
@@ -411,7 +410,7 @@ makeTokenParser languageDef
         = scan names
         where
           scan []       = False
-          scan (r:rs)   = case (compare r name) of
+          scan (r:rs)   = case compare r name of
                             LT  -> scan rs
                             EQ  -> True
                             GT  -> False
@@ -436,7 +435,7 @@ makeTokenParser languageDef
 
     --whiteSpace
     whiteSpace
-        | isJust (custWhiteSpace languageDef) = (fromJust (custWhiteSpace languageDef))  simpleSpace oneLineComment multiLineComment
+        | isJust (custWhiteSpace languageDef) = fromJust (custWhiteSpace languageDef)  simpleSpace oneLineComment multiLineComment
         | noLine && noMulti  = skipMany (simpleSpace <?> "")
         | noLine             = skipMany (simpleSpace <|> multiLineComment <?> "")
         | noMulti            = skipMany (simpleSpace <|> oneLineComment <?> "")

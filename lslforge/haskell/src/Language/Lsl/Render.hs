@@ -1,21 +1,24 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Render(renderCompiledScript,renderStatements,renderCtxStatement,renderStatement) where
 
 import Data.List(foldl',intersperse)
 import Language.Lsl.Syntax(Expr(..),Func(..),FuncDec(..),Global(..),Handler(..),State(..),Statement(..),
                   Ctx(..),Var(..),LSLType(..),Component(..),ctxItems,CompiledLSLScript(..),
                   SourceContext(..))
-import Debug.Trace
-tr s x = trace (s ++ show x) x
+import Language.Lsl.Internal.VersionString(versionString)
+--import Debug.Trace
+--tr s x = trace (s ++ show x) x
 -- | Generate a string representing an LSL script from a timestamp (string)
 -- and a compiled (i.e. validated, with referenced modules included) LSL script.
 renderCompiledScript :: String -> CompiledLSLScript -> String
 renderCompiledScript stamp (CompiledLSLScript comment globals funcs states) =
-   (renderString "// " . renderString stamp . renderString " - LSLForge (0.1.9.6) generated\n" .
-    renderString comment .
-    renderGlobals globals . renderFuncs funcs . renderStates states . renderString "\n" . 
-    renderString "// " . renderString stamp . renderString " - LSLForge (0.1.9.6) generated\n") ""
+   (signature . renderString "\n" . renderString comment .
+    renderGlobals globals . renderFuncs funcs . renderStates states . renderString "\n" . signature) ""
+  where
+    signature = renderString "// " . renderString stamp .
+                renderString (" - LSLForge (" ++ versionString ++ ") generated")
 
-renderSequence r = (foldl' (.) blank) . (map r)
+renderSequence r = foldl' (.) blank . map r
 
 renderGlobals = renderSequence renderGlobal
 
@@ -28,8 +31,7 @@ renderCtxSimple (Ctx _ expr) = renderSimple expr
 renderSimple (Neg expr) = renderChar '-' . renderCtxExpr expr
 renderSimple (ListExpr l) =
     renderChar '[' .
-        (foldl' (.) id $ intersperse (renderChar ',') $ map renderCtxSimple l) .
-        renderChar ']'
+        foldl' (.) id (intersperse (renderChar ',') $ map renderCtxSimple l) . renderChar ']'
 renderSimple (VecExpr x y z) = renderChar '<' . renderCtxSimple x .
                                renderChar ',' . renderCtxSimple y .
                                renderChar ',' . renderCtxSimple z .
@@ -59,7 +61,7 @@ renderHandler' name vars stmts =
         renderStatements 1 stmts . renderIndent 0 . renderString "}\n"
 
 renderChar = showChar
-renderVar (Var nm t) = (renderType t) . renderChar ' ' . (renderString nm)
+renderVar (Var nm t) = renderType t . renderChar ' ' . renderString nm
 renderFuncDec (FuncDec name t vars) =
     let sp = if t == LLVoid then "" else " " in
         renderType t . renderString sp . renderString (ctxItem name) . renderChar '(' .
@@ -67,7 +69,7 @@ renderFuncDec (FuncDec name t vars) =
 
 renderVarList [] = blank
 renderVarList (v:vars) =
-    (renderVar v) .
+    renderVar v .
         let render' [] = blank
             render' (v:vars) = renderChar ',' . renderVar v . render' vars in render' vars
 
@@ -120,13 +122,13 @@ renderStatement' n (If expr stmt1 stmt2) =
              _ -> renderCtxStatement True n stmt1) .
         case stmt2 of
             (Ctx _ NullStmt) -> blank
-            _ -> renderIndent n . renderString "else " . (renderCtxStatement True n stmt2)
+            _ -> renderIndent n . renderString "else " . renderCtxStatement True n stmt2
 renderStatement' n (Decl var val) =
     renderVar var .
         case val of
             Nothing -> renderString ";\n"
             Just expr -> renderString " = " . renderCtxExpr expr . renderString ";\n"
-renderStatement' n (NullStmt) = blank . renderString "\n"
+renderStatement' n NullStmt = blank . renderString "\n"
 renderStatement' n (Return Nothing) = renderString "return;\n"
 renderStatement' n (Return (Just expr)) = renderString "return " . renderCtxExpr expr . renderString ";\n";
 renderStatement' n (StateChange name) = renderString "state " . renderString name . renderString ";\n";
@@ -230,8 +232,8 @@ renderType LLVoid = blank
 blank :: String -> String
 blank = id
 
-renderPreText :: (Maybe SourceContext) -> String -> String
+renderPreText :: Maybe SourceContext -> String -> String
 renderPreText = maybe (renderString "\n") (renderString . srcPreText)
 
-renderPreText1 :: (String -> String) -> (Maybe SourceContext) -> String -> String
+renderPreText1 :: (String -> String) -> Maybe SourceContext -> String -> String
 renderPreText1 f = maybe (renderString "\n" . f) (renderString . srcPreText)

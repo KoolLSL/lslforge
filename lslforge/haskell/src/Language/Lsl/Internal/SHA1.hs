@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.SHA1(hashStoI,hashStoHex) where
 
 import Text.Printf
@@ -34,7 +35,7 @@ ks :: Array Int Word32
 ks = array (0,79) $ zip [0..] $ concatMap (replicate 20) [0x5a827999,0x6ed9eba1,0x8f1bbcdc,0xca62c1d6]
 
 fs :: Array Int (Word32 -> Word32 -> Word32 -> Word32)
-fs  = array (0,79) $ zip [0..] $ concatMap (replicate 20) [ \ x y z -> (x .&. y) .|. ((complement x) .&. z),
+fs  = array (0,79) $ zip [0..] $ concatMap (replicate 20) [ \ x y z -> (x .&. y) .|. (complement x .&. z),
                                                             \ x y z -> x `xor` y `xor` z,
                                                             \ x y z -> (x .&. y) .|. (x .&. z) .|. (y .&. z),
                                                             \ x y z -> x `xor` y `xor` z ]
@@ -42,7 +43,7 @@ fs  = array (0,79) $ zip [0..] $ concatMap (replicate 20) [ \ x y z -> (x .&. y)
 processMessageBlock i words =
     let foo' n i [] = i
         foo' n i (w:ws) =
-            let i' = (Digest ((eA i `rotateL` 5)  + ((fs ! n) (eB i) (eC i) (eD i)) + eE i + w + (ks ! n)) (eA i) (eB i `rotateL` 30) (eC i) (eD i))
+            let i' = Digest ((eA i `rotateL` 5)  + (fs ! n) (eB i) (eC i) (eD i) + eE i + w + (ks ! n)) (eA i) (eB i `rotateL` 30) (eC i) (eD i)
             in foo' (n + 1) i' ws
     in foo' 0 i (compute80Ws words)
 
@@ -63,8 +64,8 @@ getByte v i = fromIntegral $ (v `shiftR` (i*8)) .&. 0x0ff
 padMessage :: [Word8] -> [Word8]
 padMessage msg =
    let f :: Int -> [Word8] -> [Word8]
-       f n [] = 0x80:((replicate (64 - ((n + 9) `mod` 64)) 0) ++ map (getByte (8*n)) [7,6..0])
-       f n (b:bs) = b : (f (n+1) bs)
+       f n [] = 0x80:(replicate (64 - ((n + 9) `mod` 64)) 0 ++ map (getByte (8*n)) [7,6..0])
+       f n (b:bs) = b : f (n+1) bs
    in f 0 msg
 
 bytesToWord :: [Word8] -> Word32
@@ -76,4 +77,4 @@ chunk _ [] = []
 chunk n l = take n l : chunk n (drop n l)
 
 blocks512 :: [Word8] -> [[Word32]]
-blocks512 = (map (map bytesToWord . chunk 4)) . chunk 64 . padMessage
+blocks512 = map (map bytesToWord . chunk 4) . chunk 64 . padMessage

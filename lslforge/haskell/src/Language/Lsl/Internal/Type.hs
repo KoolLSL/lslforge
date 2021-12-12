@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts, DeriveDataTypeable,
     NoMonomorphismRestriction #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.Type(
     LSLType(..),
     LSLValue(..),
@@ -84,7 +85,7 @@ lslValueComponent Z (VVal x y z) = FVal z
 lslValueComponent Z (RVal x y z s) = FVal z
 lslValueComponent S (RVal x y z s) = FVal s
 lslValueComponent All val = val
-lslValueComponent c v = error ("illegal component " ++ (show c) ++ " of " ++ (show v))
+lslValueComponent c v = error ("illegal component " ++ show c ++ " of " ++ show v)
 replaceLslValueComponent X (VVal x y z) (FVal f) = VVal f y z
 replaceLslValueComponent X (RVal x y z s) (FVal f) = RVal f y z s
 replaceLslValueComponent Y (VVal x y z) (FVal f) = VVal x f z
@@ -93,7 +94,7 @@ replaceLslValueComponent Z (VVal x y z) (FVal f) = VVal x y f
 replaceLslValueComponent Z (RVal x y z s) (FVal f) = RVal x y f s
 replaceLslValueComponent S (RVal x y z s) (FVal f) = RVal x y z f
 replaceLslValueComponent All v v' = v'
-replaceLslValueComponent c v v' = error ("can't replace component " ++ (show c) ++ " of value " ++ (show v) ++ " with value " ++ (show v'))
+replaceLslValueComponent c v v' = error ("can't replace component " ++ show c ++ " of value " ++ show v ++ " with value " ++ show v')
 
 typeOfLSLValue :: (RealFloat a) => LSLValue a -> LSLType
 typeOfLSLValue v =
@@ -101,8 +102,8 @@ typeOfLSLValue v =
         (IVal _) -> LLInteger
         (FVal _) -> LLFloat
         (SVal _) -> LLString
-        (VVal _ _ _) -> LLVector
-        (RVal _ _ _ _) -> LLRot
+        VVal {} -> LLVector
+        RVal {} -> LLRot
         (LVal _) -> LLList
         (KVal _) -> LLKey
         VoidVal -> LLVoid
@@ -115,31 +116,31 @@ onS f _ (SVal s) = f s
 onS _ nf _ = nf
 
 typeOfLSLComponent v All = typeOfLSLValue v
-typeOfLSLComponent (VVal _ _ _) _ = LLFloat
-typeOfLSLComponent (RVal _ _ _ _) _ = LLFloat
-typeOfLSLComponent v c = error ("value " ++ (show v) ++ " doesn't have a subcomponents")
+typeOfLSLComponent VVal {} _ = LLFloat
+typeOfLSLComponent RVal {} _ = LLFloat
+typeOfLSLComponent v c = error ("value " ++ show v ++ " doesn't have a subcomponents")
 
 -- convert a value to a string 'internally' (TODO: where SHOULD this be used? It's used in internal funcs, but
 -- probably will not work completely correctly when tabs, newlines, or double quotes are involved)
-lslValString (IVal i) = (show i)
-lslValString (FVal f) = (printf "%.6f" ((realToFrac f) :: Double))
+lslValString (IVal i) = show i
+lslValString (FVal f) = printf "%.6f" (realToFrac f :: Double)
 lslValString (SVal s) = s
 lslValString (KVal k) = unLslKey k
 lslValString (VVal x y z) = concat ["<",comp2Str x,",",comp2Str y,",",comp2Str z,">"]
 lslValString (RVal x y z s) = concat ["<",comp2Str x,",",comp2Str y,",",comp2Str z,",",comp2Str s,">"]
 lslValString (LVal l) = concat ("[":(intersperse "," (map lslValString l) ++ ["]"]))
-lslValString (VoidVal) = ""
+lslValString VoidVal = ""
 
 -- convert a value to a string for display
 lslShowVal (SVal s) = ('\"':escape s) ++ "\""
-    where escape ('\n':cs) = '\\':'n':(escape cs)
-          escape ('\\':cs) = '\\':'\\':(escape cs)
-          escape ('\"':cs) = '\\':'\"':(escape cs)
-          escape ('\t':cs) = '\\':'t':(escape cs) -- this one shouldn't happen (tabs should get converted to spaces)
-          escape (c:cs) = c:(escape cs)
+    where escape ('\n':cs) = '\\':'n':escape cs
+          escape ('\\':cs) = '\\':'\\':escape cs
+          escape ('\"':cs) = '\\':'\"':escape cs
+          escape ('\t':cs) = '\\':'t':escape cs -- this one shouldn't happen (tabs should get converted to spaces)
+          escape (c:cs) = c:escape cs
           escape [] = []
 lslShowVal (KVal k) = lslShowVal (SVal $ unLslKey k)
-lslShowVal (LVal l) = concat ("[":(intersperse "," (map lslShowVal l))) ++ "]"
+lslShowVal (LVal l) = concat ("[":intersperse "," (map lslShowVal l)) ++ "]"
 lslShowVal VoidVal = "n/a"
 lslShowVal v = lslValString v
 
@@ -161,9 +162,9 @@ isLVal (LVal _) = True
 isLVal _ = False
 isFVal (FVal _) = True
 isFVal _ = False
-isVVal (VVal _ _ _) = True
+isVVal VVal {} = True
 isVVal _ = False
-isRVal (RVal _ _ _ _) = True
+isRVal RVal {} = True
 isRVal _ = False
 isKVal (KVal _) = True
 isKVal _ = False
@@ -232,15 +233,15 @@ lslValueE = choicet [
     ("list", LVal <$> elist lslValueE)]
 
 -- vector and rotation operations
-vecMulScalar (VVal x y z) f = (VVal (x*f) (y*f) (z*f))
+vecMulScalar (VVal x y z) f = VVal (x*f) (y*f) (z*f)
 rotMul (RVal x1 y1 z1 s1) (RVal x2 y2 z2 s2) =
     let (x,y,z,s) = (x1,y1,z1,s1) `quaternionMultiply` (x2,y2,z2,s2)
     in RVal x y z s
 rot2Mat (RVal x y z s) = quaternionToMatrix (x,y,z,s)
 matMul ((a1,b1,c1),(a2,b2,c2),(a3,b3,c3)) (VVal a b c) =
     VVal (a1*a + a2 * b + a3 * c) (b1 * a + b2 * b + b3 * c) (c1 * a + c2 * b + c3 * c)
-rotMulVec rot vec = matMul (rot2Mat rot) vec
-invRot (RVal x y z s) = (RVal (-x) (-y) (-z) s)
+rotMulVec rot = matMul (rot2Mat rot)
+invRot (RVal x y z s) = RVal (-x) (-y) (-z) s
 
 vcross (VVal x1 y1 z1) (VVal x2 y2 z2) =
     let (x,y,z) = (x1,y1,z1) `cross` (x2,y2,z2) in VVal x y z
@@ -251,13 +252,13 @@ toFloat (IVal i) = fromInt i
 vVal2Vec (VVal x y z) = (x,y,z)
 vec2VVal (x,y,z) = VVal x y z
 liftV1 f = vec2VVal . f . vVal2Vec
-liftV2 f = \ x y -> vec2VVal $ f (vVal2Vec x) (vVal2Vec y)
+liftV2 f x y = vec2VVal $ f (vVal2Vec x) (vVal2Vec y)
 
 rot2RVal (x,y,z,s) = RVal x y z s
 rVal2Rot (RVal x y z s) = (x,y,z,s)
 
 
-convertValues argTypes args = zipWith convertArg argTypes args
+convertValues = zipWith convertArg
     where convertArg LLFloat (IVal i) = FVal $ fromInt i
           convertArg LLInteger (FVal f) = IVal $ floor f
           convertArg LLKey (SVal s) = KVal $ LSLKey s

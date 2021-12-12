@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Here
@@ -14,7 +13,6 @@
 -----------------------------------------------------------------------------
 module Text.Here(here) where
 
-import Data.Generics.Aliases(extQ)
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Quote(QuasiQuoter(..),dataToPatQ,dataToExpQ)
 

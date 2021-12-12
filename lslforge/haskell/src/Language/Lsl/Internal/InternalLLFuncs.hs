@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-
    The 'Internal Functions' of LSL are not a formal grouping of functions, but by my definition
    are all the functions that -
@@ -53,6 +54,9 @@ module Language.Lsl.Internal.InternalLLFuncs(
     llXorBase64Strings,
     llXorBase64StringsCorrect,
     llSHA1String,
+    llChar,
+    llOrd,
+    llHash,
     -- Math functions
     llCos,
     llSin,
@@ -109,16 +113,29 @@ module Language.Lsl.Internal.InternalLLFuncs(
     internalLLFuncNames
     ) where
 
-import Language.Lsl.Internal.Util(Permutation3(..),axisAngleToRotation,cut,dist3d,elemAtM,
-               filtMap,fromInt,indexOf,mag3d,mag3d2,matrixToQuaternion,quaternionToMatrix,
-               quaternionToRotations,rotationBetween,rotationsToQuaternion)
+import Language.Lsl.Internal.Util
+    ( Permutation3(..),
+      axisAngleToRotation,
+      cut,
+      dist3d,
+      elemAtM,
+      filtMap,
+      fromInt,
+      indexOf,
+      mag3d,
+      mag3d2,
+      matrixToQuaternion,
+      quaternionToMatrix,
+      quaternionToRotations,
+      rotationBetween,
+      rotationsToQuaternion,
+      LSLInteger )
 import Language.Lsl.Internal.Type(LSLType(..),LSLValue(..),iVal,lslValString,parseFloat,parseInt,rot2RVal,toSVal,typeOfLSLValue,vVal2Vec)
-import Language.Lsl.Internal.Util(LSLInteger)
 import Language.Lsl.Internal.Evaluation(EvalResult(..))
 import Language.Lsl.Internal.Constants(findConstVal)
 import Language.Lsl.Internal.Key(LSLKey(..))
 import Language.Lsl.Internal.SHA1(hashStoHex)
-import Data.List(elemIndex,find,foldl',intersperse,isPrefixOf,sort)
+import Data.List(elemIndex,find,foldl',isPrefixOf,sort, intercalate)
 import Data.Char(toLower,toUpper,chr,ord,isHexDigit,digitToInt,intToDigit)
 import Data.Bits((.|.),(.&.),shiftL,shiftR,xor)
 import qualified Data.ByteString as B
@@ -126,6 +143,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.Digest.Pure.MD5 as MD5
 import qualified Data.ByteString.UTF8 as UTF8
 import Codec.Binary.UTF8.String(encodeString,decodeString)
+import Data.Maybe (fromMaybe)
 
 internalLLFuncNames :: [String]
 internalLLFuncNames = map fst (internalLLFuncs :: (Read a, RealFloat a, Show a) => [(String, a -> [LSLValue a] -> Maybe (EvalResult,LSLValue a))])
@@ -142,6 +160,7 @@ internalLLFuncs = [
     ("llAxisAngle2Rot",llAxisAngle2Rot),
     ("llBase64ToInteger",llBase64ToInteger),
     ("llBase64ToString",llBase64ToString),
+    ("llChar",llChar),
     ("llCeil",llCeil),
     ("llCos",llCos),
     ("llCSV2List",llCSV2List),
@@ -155,6 +174,7 @@ internalLLFuncs = [
     ("llGetListEntryType",llGetListEntryType),
     ("llGetListLength",llGetListLength),
     ("llGetSubString",llGetSubString),
+    ("llHash",llHash),
     ("llInsertString",llInsertString),
     ("llIntegerToBase64",llIntegerToBase64),
     ("llList2CSV",llList2CSV),
@@ -175,6 +195,7 @@ internalLLFuncs = [
     ("llLog10",llLog10),
     ("llMD5String",llMD5String),
     ("llModPow",llModPow),
+    ("llOrd",llOrd),
     ("llParseString2List",llParseString2List),
     ("llParseStringKeepNulls",llParseStringKeepNulls),
     ("llPow",llPow),
@@ -216,20 +237,20 @@ llInsertString _ [SVal dst, IVal pos, SVal src] =
 
 
 separate :: Eq a => [a] -> [[a]] -> [[a]] -> [a] -> Bool -> [[a]]
-separate [] _ _ accum keepNulls = if keepNulls || length accum > 0 then [reverse accum] else []
+separate [] _ _ accum keepNulls = [reverse accum | keepNulls || not (null accum)]
 separate l seps spacers accum keepNulls =
-   case find ((flip isPrefixOf) l) seps of
+   case find (`isPrefixOf` l) seps of
        Nothing ->
-           case find ((flip isPrefixOf) l) spacers of
+           case find (`isPrefixOf` l) spacers of
                Nothing -> let rest = tail l in separate rest seps spacers (head l:accum) keepNulls
                Just p -> let rest = drop (length p) l in
-                         if accum == [] && not keepNulls then
-                             p:(separate rest seps spacers [] keepNulls)
-                         else (reverse accum):p:(separate rest seps spacers [] keepNulls)
+                         if null accum && not keepNulls then
+                             p:separate rest seps spacers [] keepNulls
+                         else reverse accum:p:separate rest seps spacers [] keepNulls
        Just p -> let rest = drop (length p) l in
-                 if accum == [] && not keepNulls then
+                 if null accum && not keepNulls then
                      separate rest seps spacers [] keepNulls
-                 else (reverse accum):(separate rest seps spacers [] keepNulls)
+                 else reverse accum:separate rest seps spacers [] keepNulls
 
 
 llStringTrim _ [SVal string, trimType ] =
@@ -251,10 +272,8 @@ llParseStringKeepNulls _ [SVal string, LVal separators, LVal spacers] =
 llToUpper _ [SVal string] = continueWith $ SVal $ map toUpper string
 llToLower _ [SVal string] = continueWith $ SVal $ map toLower string
 
-llSubStringIndex _ [SVal source, SVal pattern] = continueWith $ IVal $
-    case indexOf pattern source of
-        Nothing -> (-1)
-        Just i -> fromInt i
+llSubStringIndex _ [SVal source, SVal pat] = continueWith $ IVal $
+    maybe (-1) fromInt (indexOf pat source)
 
 unescapedChars = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z']
 
@@ -267,7 +286,7 @@ maxResult = 254::Int
 
 escapeURIChar' :: (Char -> Bool) -> Char -> String
 escapeURIChar' p c | p c = [c]
-                   | otherwise = '%' : intToDigit (n `shiftR` 4) : intToDigit (n .&. 0xf) : []
+                   | otherwise = ['%', intToDigit (n `shiftR` 4), intToDigit (n .&. 0xf)]
               where n = ord c
 
 llEscapeURL _ [SVal string] =
@@ -281,15 +300,26 @@ llUnescapeURL _ [SVal string] =
 unEscapeString' :: String -> String
 unEscapeString' "" = ""
 unEscapeString' ('%':c:d:r) | isHexDigit c && isHexDigit d =
-                                (chr $ digitToInt d + digitToInt c `shiftL` 4) : unEscapeString' r
-                            | otherwise = '%' : (unEscapeString' $ c : d : r)
+                                chr (digitToInt d + digitToInt c `shiftL` 4) : unEscapeString' r
+                            | otherwise = '%' : unEscapeString' (c : d : r)
 unEscapeString' (c:r) = c : unEscapeString' r
-    
+
 llMD5String _ [SVal string, IVal nonce] =
     continueWith $ SVal $ (show . MD5.md5 . L.pack . B.unpack . UTF8.fromString) (string ++ ":" ++ show nonce)
 
 llSHA1String _ [SVal string] = continueWith $ SVal (hashStoHex string)
 -- Math functions
+
+llChar _ [IVal val] = continueWith $ SVal [chr $ fromInt val]
+
+llOrd _ [SVal str, IVal ind] = continueWith $ iVal $ go str i
+    where i = if ind < 0 then ind + fromInt (length str) else ind
+          go [] _ = 0
+          go (x:_) 0 = ord x
+          go (_:xs) n = go xs (n - 1)
+
+llHash _ [SVal str] = continueWith $ IVal $
+    foldl (\acc x -> fromInt (ord x) + shiftL acc 6 + shiftL acc 16 - acc) 0 str
 
 unaryToLL :: (RealFloat a, Monad m) => (a -> a) -> [LSLValue a] -> m (EvalResult,LSLValue a)
 unaryToLL f [FVal v] = continueWith $ FVal (f v)
@@ -321,7 +351,7 @@ modpow a b c | b < 0 = 0
              | otherwise =
                 let b' = (if b > 0xFFFF then 0xFFFF else b)
                     pow _ 0 = 1 `mod` c
-                    pow x n = (let p' = pow x (n `div` 2) in ((if odd n then (x *) else id) (p' * p')) `mod` c)
+                    pow x n = (let p' = pow x (n `div` 2) in (if odd n then (x *) else id) (p' * p') `mod` c)
                 in pow (a `mod` c) b'
 
 -- should use a map for this, but have been using lists for everything, so will stick with it...
@@ -343,18 +373,16 @@ toF (IVal i) = Just (fromInt i)
 toF (FVal f) = Just f
 toF _ = Nothing
 
-fvals list = filtMap toF list
-
 llListStatistics _ [IVal operation,LVal list] =
     case lookup (fromInt operation) statFuncs of
         Nothing -> continueWith $ FVal 0 -- this seems to be what lsl does...
-        Just f -> continueWith $ FVal (f $ fvals list)
+        Just f -> continueWith $ FVal (f $ filtMap toF list)
 
 listStatRange l = listStatMax l - listStatMin l
 listStatMax [] = 0.0
-listStatMax l = foldl1 max l
+listStatMax l = maximum l
 listStatMin [] = 0.0
-listStatMin l = foldl1 min l
+listStatMin l = minimum l
 
 listStatMean l = sum l / fromInt (length l)
 listStatMedian [] = 0.0
@@ -430,7 +458,7 @@ llList2List _ [LVal source, IVal start, IVal end] = continueWith $ LVal (subList
 llDeleteSubList _ [LVal source, IVal start, IVal end] = continueWith $ LVal (deleteSubList source (fromInt start) (fromInt end))
 
 llDumpList2String _ [LVal list, SVal sep] =
-    continueWith $ SVal $ concat $ intersperse sep (map lslValString list)
+    continueWith $ SVal $ intercalate sep $ map lslValString list
 
 deleteSubList source start end =
     let n = length source
@@ -458,17 +486,17 @@ convertIndex length index = if index < 0 then length + index else index
 llCSV2List _ [SVal s] =
     continueWith $ LVal $ map SVal (lslCsvToList [] s)
 llList2CSV _ [LVal l] =
-    continueWith $ SVal $ concat (intersperse ", " (map lslValToString l))
+    continueWith $ SVal $ intercalate ", " $ map lslValToString l
 
-lslValToString (VVal x y z) = "<" ++ (show x) ++ "," ++ (show y) ++ "," ++ (show z) ++ ">"
-lslValToString (RVal x y z s) = "<" ++ (show x) ++ "," ++ (show y) ++ "," ++ (show z) ++ "," ++ (show s) ++ ">"
+lslValToString (VVal x y z) = "<" ++ show x ++ "," ++ show y ++ "," ++ show z ++ ">"
+lslValToString (RVal x y z s) = "<" ++ show x ++ "," ++ show y ++ "," ++ show z ++ "," ++ show s ++ ">"
 lslValToString (SVal s) = s
 lslValToString (KVal k) = unLslKey k
 lslValToString (IVal i) = show i
 lslValToString (FVal f) = show f
 
 lslCsvToList partial [] = [reverse partial]
-lslCsvToList partial (',':rst) = (reverse partial) : (lslCsvToList [] rst)
+lslCsvToList partial (',':rst) = reverse partial : lslCsvToList [] rst
 lslCsvToList partial ('<':rst) = bracketPattern 0 ('<':partial) rst
 lslCsvToList partial (x:rst) = lslCsvToList (x:partial) rst
 
@@ -478,10 +506,8 @@ bracketPattern n partial ('<':rst) = bracketPattern (n+1) ('<':partial) rst
 bracketPattern n partial (x:rst) = bracketPattern n (x:partial) rst
 bracketPattern n partial [] = lslCsvToList partial []
 
-llListFindList _ [LVal source, LVal pattern] = continueWith $ IVal $
-    case indexOf pattern source of
-        Nothing -> (-1)
-        Just i -> fromInt i
+llListFindList _ [LVal source, LVal pat] = continueWith $ IVal $
+    maybe (-1) fromInt (indexOf pat source)
 llListInsertList _ [LVal dst, LVal src, IVal pos] =
    let (x,y) = splitAt (fromInt pos) dst in continueWith $ LVal $ x ++ src ++ y
 
@@ -502,7 +528,7 @@ llList2ListStrided _ [LVal src, IVal start, IVal end, IVal stride] =
         continueWith $ LVal $ subList stridedSrc (fromInt start') (fromInt end')
 
 strideList l stride =
-    if length l <= stride || stride <= 1 then [l] else (take stride l):(strideList (drop stride l) stride)
+    if length l <= stride || stride <= 1 then [l] else take stride l:strideList (drop stride l) stride
 
 llListSort _ [LVal list, IVal stride, IVal ascending] =
   let Just (IVal true) = findConstVal "TRUE" -- this will crash if true isn't defined...
@@ -529,8 +555,8 @@ invalidType = let Just v = findConstVal "TYPE_INVALID" in v
 -- TODO: might this function work with negative indices? assuming no.
 llGetListEntryType _ [LVal l, IVal index] =
     continueWith $
-        if index < 0 || index >= (fromInt (length l)) then invalidType
-        else let Just v = lookup (typeOfLSLValue $ l !! (fromInt index)) typeCodes in v
+        if index < 0 || index >= fromInt (length l) then invalidType
+        else let Just v = lookup (typeOfLSLValue $ l !! fromInt index) typeCodes in v
 
 elemAtM' i = if i >= 0 then elemAtM (fromInt i) else elemAtM ((-1) - fromInt i) . reverse
 
@@ -557,7 +583,7 @@ llList2Key _ [LVal l, IVal index] =
             _ -> let (Just (SVal v)) = findConstVal "NULL_KEY" in KVal $ LSLKey v
 llList2Rot _ [LVal l, IVal index] =
     continueWith $ case elemAtM' index l of
-            Just r@(RVal _ _ _ _) -> r
+            Just r@RVal {} -> r
             _ -> let (Just r) = findConstVal "ZERO_ROTATION" in r
 
 llList2String _ [LVal l, IVal index] =
@@ -568,7 +594,7 @@ llList2String _ [LVal l, IVal index] =
 
 llList2Vector _ [LVal l, IVal index] =
     continueWith $ case elemAtM' index l of
-            Just v@(VVal _ _ _) -> v
+            Just v@VVal {} -> v
             _ -> let (Just v) = findConstVal "ZERO_VECTOR" in v
 
 
@@ -581,20 +607,16 @@ llIntegerToBase64 _ [IVal i] =
          digit4 = 63 .&. (i `shiftR` 8)
          digit5 = 63 .&. (i `shiftR` 2)
          digit6 = 63 .&. (i `shiftR` (-4))
-    in continueWith $ SVal $ map (\i -> base64chars !! (fromInt i)) [digit1,digit2,digit3,digit4,digit5,digit6] ++ "=="
+    in continueWith $ SVal $ map (\i -> base64chars !! fromInt i) [digit1,digit2,digit3,digit4,digit5,digit6] ++ "=="
 
 charToBits :: Char -> Int
-charToBits c = case elemIndex c base64chars of
-    Nothing -> 0
-    Just i -> i
+charToBits c = fromMaybe 0 (elemIndex c base64chars)
 
 llBase64ToInteger _ [SVal s] =
      let n = length s
-         s' = if n >= 8 then s else (s ++ (replicate (6 - n) 'A'))
-         charToBits c = case elemIndex c base64chars of
-             Nothing -> 0
-             Just i -> i
-     in continueWith $ iVal $ foldl' (.|.) 0 $ zipWith (shiftL) (map charToBits (take 6 s')) [26,20..]
+         s' = if n >= 8 then s else s ++ replicate (6 - n) 'A'
+         charToBits c = fromMaybe 0 (elemIndex c base64chars)
+     in continueWith $ iVal $ foldl' (.|.) 0 $ zipWith shiftL (map charToBits (take 6 s')) [26,20..]
 
 slPrintable :: String
 slPrintable = map toEnum (10:[32..127])
@@ -604,19 +626,19 @@ mkPrintable c = if c `elem` slPrintable then c else '?'
 -- some valid cases
 decodeB64 :: String -> String
 decodeB64 [] = []
-decodeB64 (x:y:'=':'=':[]) =
+decodeB64 [x, y, '=', '='] =
     let (c1,c2,_) = decodeQuartet(charToBits x,charToBits y,0,0) in [c1]
-decodeB64 (x:y:z:'=':[]) =
+decodeB64 [x, y, z, '='] =
     let (c1,c2,_) = decodeQuartet(charToBits x,charToBits y,charToBits z,0) in [c1,c2]
 decodeB64 (w:x:y:z:rest) =
     let (c1,c2,c3) = decodeQuartet(charToBits w,charToBits x,charToBits y,charToBits z) in
-        (c1:c2:c3:(decodeB64 rest))
+        (c1:c2:c3:decodeB64 rest)
 -- some invalid ones
-decodeB64 (x:[]) =
+decodeB64 [x] =
     let (c1,_,_) = decodeQuartet(charToBits x,0,0,0) in [c1]
-decodeB64 (x:y:[]) =
+decodeB64 [x, y] =
     let (c1,_,_) = decodeQuartet(charToBits x,charToBits y,0,0) in [c1]
-decodeB64 (x:y:z:[]) =
+decodeB64 [x, y, z] =
     let (c1,c2,_) = decodeQuartet(charToBits x,charToBits y,charToBits z,0) in [c1]
 
 decodeQuartet :: (Int,Int,Int,Int) -> (Char,Char,Char)
@@ -627,10 +649,10 @@ decodeQuartet (w,x,y,z) =
     in (toEnum c1,toEnum c2, toEnum c3)
 
 
-stripPadChars ('=':'=':[]) = []
-stripPadChars ('=':[]) = []
+stripPadChars ['=', '='] = []
+stripPadChars ['='] = []
 stripPadChars [] = []
-stripPadChars (x:xs) = x:(stripPadChars xs)
+stripPadChars (x:xs) = x:stripPadChars xs
 
 llXorBase64Strings _ [SVal s1, SVal s2] =
     let i1 = map charToBits $ stripPadChars s1
@@ -653,29 +675,29 @@ llXorBase64StringsCorrect _ [SVal s1, SVal s2] =
 llBase64ToString _ [SVal s] = continueWith $ SVal $ map mkPrintable $ decodeB64 s
 
 llStringToBase64 _ [SVal s] =
-    let s' = (encodeB64 s) in
+    let s' = encodeB64 s in
         continueWith $ SVal s'
 
 encodeB64 [] = []
 encodeB64 [x] = encode1 x
 encodeB64 [x,y] = encode2 (x,y)
-encodeB64 (x:y:z:rest) = encode3 (x,y,z) ++ (encodeB64 rest)
+encodeB64 (x:y:z:rest) = encode3 (x,y,z) ++ encodeB64 rest
 
 encode3 :: (Char,Char,Char) -> [Char]
 encode3 (c1,c2,c3) =
-    let b1 = ((fromEnum c1) `shiftR` 2) .&. 63
-        b2 = (((fromEnum c1) `shiftL` 4) .|. ((fromEnum c2) `shiftR` 4)) .&. 63
-        b3 = (((fromEnum c2) `shiftL` 2) .|. ((fromEnum c3) `shiftR` 6)) .&. 63
-        b4 = (fromEnum c3) .&. 63
+    let b1 = (fromEnum c1 `shiftR` 2) .&. 63
+        b2 = ((fromEnum c1 `shiftL` 4) .|. (fromEnum c2 `shiftR` 4)) .&. 63
+        b3 = ((fromEnum c2 `shiftL` 2) .|. (fromEnum c3 `shiftR` 6)) .&. 63
+        b4 = fromEnum c3 .&. 63
     in [base64chars !! b1,base64chars !! b2,base64chars !! b3,base64chars !! b4]
 encode2 :: (Char,Char) -> [Char]
 encode2 (c1,c2) =
-    let b1 = ((fromEnum c1) `shiftR` 2) .&. 63
-        b2 = (((fromEnum c1) `shiftL` 4) .|. ((fromEnum c2) `shiftR` 4)) .&. 63
-        b3 = ((fromEnum c2) `shiftL` 2) .&. 63
+    let b1 = (fromEnum c1 `shiftR` 2) .&. 63
+        b2 = ((fromEnum c1 `shiftL` 4) .|. (fromEnum c2 `shiftR` 4)) .&. 63
+        b3 = (fromEnum c2 `shiftL` 2) .&. 63
     in [base64chars !! b1,base64chars !! b2,base64chars !! b3,'=']
 encode1 :: Char -> [Char]
 encode1 c1 =
-    let b1 = ((fromEnum c1) `shiftR` 2) .&. 63
-        b2 = ((fromEnum c1) `shiftL` 4) .&. 63
+    let b1 = (fromEnum c1 `shiftR` 2) .&. 63
+        b2 = (fromEnum c1 `shiftL` 4) .&. 63
     in [base64chars !! b1,base64chars !! b2,'=','=']

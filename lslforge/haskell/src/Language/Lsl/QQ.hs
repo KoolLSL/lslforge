@@ -27,7 +27,7 @@ lslModulePat s =
             l <- TH.location
             let (line,col) = TH.loc_start l
             let (line1, col1) = (sourceLine pos, sourceColumn pos)
-            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show (col1) ++ ": "  ++
+            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show col1 ++ ": "  ++
                    showErrorMessages "or" "unknown" "expecting" "unexpected" "end of input" msgs
         Right x -> dataToPatQ (const Nothing `extQ` aqp) x
 lslModuleExp :: String -> TH.Q TH.Exp
@@ -37,7 +37,7 @@ lslModuleExp s =
             l <- TH.location
             let (line,col) = TH.loc_start l
             let (line1, col1) = (sourceLine pos, sourceColumn pos)
-            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show (col1) ++ ": "  ++
+            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show col1 ++ ": "  ++
                    showErrorMessages "or" "unknown" "expecting" "unexpected" "end of input" msgs
         Right x -> dataToExpQ (const Nothing `extQ` aqe) x
 
@@ -56,7 +56,7 @@ lslScriptPat s =
             l <- TH.location
             let (line,col) = TH.loc_start l
             let (line1, col1) = (sourceLine pos, sourceColumn pos)
-            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show (col1) ++ ": "  ++
+            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show col1 ++ ": "  ++
                    showErrorMessages "or" "unknown" "expecting" "unexpected" "end of input" msgs
         Right x -> dataToPatQ (const Nothing `extQ` aqp) x
 lslScriptExp :: String -> TH.Q TH.Exp
@@ -66,7 +66,7 @@ lslScriptExp s =
             l <- TH.location
             let (line,col) = TH.loc_start l
             let (line1, col1) = (sourceLine pos, sourceColumn pos)
-            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show (col1) ++ ": "  ++
+            fail $ "at " ++ show (line + line1 - 1) ++ ":" ++ show col1 ++ ": "  ++
                    showErrorMessages "or" "unknown" "expecting" "unexpected" "end of input" msgs
         Right x -> dataToExpQ (const Nothing `extQ` aqe) x
 

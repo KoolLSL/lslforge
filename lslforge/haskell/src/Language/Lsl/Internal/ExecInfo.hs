@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.ExecInfo(emitExecutionInfo) where
 
 import Language.Lsl.Internal.Exec(ExecutionInfo(..),FrameInfo(..))
@@ -24,7 +25,7 @@ emitFrame (name,ctx,line,bindings) =
                      emitLine line,
                      emit "bindings" [] (map emitBinding bindings)]
     where emitCtx Nothing = id
-          emitCtx (Just (SourceContext { srcTextLocation = txtl })) = emitSimple "file" [] ( textName txtl )
+          emitCtx (Just SourceContext { srcTextLocation = txtl }) = emitSimple "file" [] ( textName txtl )
           emitLine Nothing = id
           emitLine (Just i) = emitSimple "line" [] (show i)
 
@@ -32,7 +33,7 @@ emitBinding (name,val) =
     emit "binding" [] [emitSimple "name" [] name,
                        emitVal val]
 
-emitVal' t s = emitSimple "val" [("class",t)] s
+emitVal' t = emitSimple "val" [("class",t)]
 emitVal (IVal i) = emitVal' "integer-value" (show i)
 emitVal (FVal f) = emitVal' "float-value" (show f)
 emitVal (SVal s) = emitVal' "string-value" s

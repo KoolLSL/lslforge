@@ -32,10 +32,11 @@ data DynamicBreakpoint = NoDynamicBreakpoint | NextStatement | NextStatementInFr
 
 newtype StepManager = StepManager [DynamicBreakpoint] deriving (Show)
 
-mkBreakpoint name line col = Breakpoint name line col
+mkBreakpoint = Breakpoint
 
-data BreakpointManager = BreakpointManager { fixedBreakpoints :: (Map String (Set (Int,Int))) }
-    deriving (Show)
+newtype BreakpointManager
+  = BreakpointManager {fixedBreakpoints :: Map String (Set (Int,Int))}
+  deriving Show
 
 emptyStepManager = StepManager []
 
@@ -70,8 +71,8 @@ removeFixedBreakpoint (Breakpoint file line col) bpm =
 
 pushStepManagerFrame (StepManager dynBps) =
     StepManager $ case dynBps of
-        (NextStatement:frames) -> (NextStatement:NoDynamicBreakpoint:frames)
-        frames -> (NoDynamicBreakpoint:frames)
+        (NextStatement:frames) -> NextStatement:NoDynamicBreakpoint:frames
+        frames -> NoDynamicBreakpoint:frames
 
 popStepManagerFrame (StepManager dynBps) =
    StepManager $ case dynBps of

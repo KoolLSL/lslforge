@@ -12,6 +12,7 @@ import Data.List(maximumBy)
 import Language.Lsl.Internal.Type(LSLValue(..))
 import Language.Lsl.Internal.Exec(Binding(..))
 import Language.Lsl.Internal.Util(removeLookup)
+import Data.Maybe (isNothing)
 
 data FuncCallExpectations a = FuncCallExpectations {
     expectationMode :: ExpectationMode,
@@ -49,7 +50,7 @@ matchFail = fail "no matching call"
 
 expectedReturns :: (RealFloat a,Monad m) => String -> [LSLValue a] -> FuncCallExpectations a -> m ((String,[Maybe (LSLValue a)]),LSLValue a)
 expectedReturns name args (FuncCallExpectations Strict (match@((name',expectArgs),returns):_)) =
-    if name /= name' || argsMatch expectArgs args == Nothing then matchFail
+    if name /= name' || isNothing (argsMatch expectArgs args) then matchFail
     else return match
 expectedReturns name args (FuncCallExpectations Strict _) = matchFail
 expectedReturns n a (FuncCallExpectations mode callList) =
@@ -58,11 +59,11 @@ expectedReturns n a (FuncCallExpectations mode callList) =
                             | otherwise = Nothing
         argMatch Nothing _              = Just 0
         argsMatch args expectArgs = foldl (liftM2 (+)) (Just 0) $ zipWith argMatch expectArgs args
-        ranked = zip (map (argsMatch a) (map (snd . fst) rightNames)) rightNames
+        ranked = zip (map (argsMatch a . (snd . fst)) rightNames) rightNames
         orderMatch (Nothing,_) (Nothing,_) = EQ
         orderMatch _ (Nothing,_) = GT
         orderMatch (Nothing,_) _ = LT
-        orderMatch ((Just a),_) ((Just b),_) = compare a b
+        orderMatch (Just a,_) (Just b,_) = compare a b
     in case ranked of
         [] -> fail matchFail
         _ -> case maximumBy orderMatch ranked of

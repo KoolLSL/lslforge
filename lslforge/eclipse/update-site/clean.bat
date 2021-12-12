@@ -1,5 +1,9 @@
+pushd "%~dp0"
 
-rmdir "features" /s /q 
-rmdir "plugins" /s /q 
-del artifacts.jar
-del content.jar
+@echo off
+
+rmdir  /s /q "features" 2>nul
+rmdir /s /q "plugins" 2>nul
+del "artifacts.jar" 2>nul
+del "content.jar" 2>nul
+popd

@@ -14,11 +14,11 @@ import Data.Generics.Aliases
 
 everythingButTwice :: GenericQ Bool -> (r -> r -> r) -> r -> GenericQ r -> GenericQ r -> GenericQ r
 everythingButTwice q k def f g x | q x = def
-                                 | otherwise = (foldl k (f x) (gmapQ (everythingButTwice q k def f g) x) `k` (g x))
+                                 | otherwise = foldl k (f x) (gmapQ (everythingButTwice q k def f g) x) `k` g x
 
 everythingTwice :: (r -> r -> r) -> GenericQ r -> GenericQ r -> GenericQ r
 everythingTwice k f g x
-  = foldl k (f x) (gmapQ (everythingTwice k f g) x) `k` (g x)
+  = foldl k (f x) (gmapQ (everythingTwice k f g) x) `k` g x
 
 
 downup :: Monad m => GenericM m -> GenericM m -> GenericM m

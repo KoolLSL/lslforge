@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeSynonymInstances,
-             MultiParamTypeClasses, GeneralizedNewtypeDeriving,
-             NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving, NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.WorldDef(
     Avatar(..),
     AvatarControlListener(..),
@@ -73,7 +72,7 @@ import qualified Control.Monad.State as SM(get,put,State)
 import Data.List(find,sortBy)
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
-import Data.Maybe(isNothing)
+import Data.Maybe(isNothing, catMaybes)
 
 import Language.Lsl.Syntax(CodeErrs(CodeErrs))
 import Language.Lsl.Internal.DOMProcessing(req,opt,def,val,text,elist,
@@ -85,6 +84,7 @@ import Language.Lsl.Internal.Key(mkKey,nullKey,LSLKey(..))
 import Language.Lsl.Internal.Type(LSLValue(..))
 import Language.Lsl.Internal.Util(
     mlookup,Permutation3(..),rotationsToQuaternion,LSLInteger)
+import Data.Functor ((<&>))
 
 type ScriptId = (LSLKey,String)
 
@@ -538,7 +538,7 @@ fctx _ (Right v) = return v
 mkPrimMap prims = M.fromList [(_primKey p, p) | p <- prims]
 
 mkObjectMap objects =
-    M.fromList [ (p, o) | o@(LSLObject { _primKeys = (p:_) }) <- objects ]
+    M.fromList [ (p, o) | o@LSLObject { _primKeys = (p:_) } <- objects ]
 mkAvatarLookup avatars = [ (_avatarKey a,a) | a <- avatars]
 
 checkObject primMap o =
@@ -549,17 +549,16 @@ checkObject primMap o =
             case M.lookup k m of
                 Nothing -> fail ("prim " ++ show k ++ " not found in definition")
                 Just prim ->
-                    return (if (k == root)
+                    return (if k == root
                         then m
                         else M.insert k (prim { _primParent = Just root }) m)
 
-checkObjects primMap os = foldM checkObject primMap os
+checkObjects = foldM checkObject
 
 activateScripts scriptIdInfo compiledScripts primMap =
-    mapM (activateScript compiledScripts primMap) scriptIdInfo >>=
-        (\ ms -> return [ s | Just s <- ms ])
+    mapM (activateScript compiledScripts primMap) scriptIdInfo <&> catMaybes
 
-activateScript scripts primMap (k@(primKey,invName),(scriptID)) = do
+activateScript scripts primMap (k@(primKey,invName),scriptID) = do
     let script = case lookup scriptID scripts of
              Nothing -> fail "script not found"
              Just v -> v
@@ -569,8 +568,8 @@ activateScript scripts primMap (k@(primKey,invName),(scriptID)) = do
         fail (invName ++ " doesn't exist in prim " ++ unLslKey primKey)
     case script of
         Left (CodeErrs ((_,s):_)) ->
-            tell [("script \"" ++ invName ++ "\" in prim " ++ unLslKey primKey ++
-                  " failed to activate because of error: " ++ s)]
+            tell ["script \"" ++ invName ++ "\" in prim " ++ unLslKey primKey ++
+                  " failed to activate because of error: " ++ s]
             >> return Nothing
         Right code -> return $ Just (k,mkScript $ initLSLScript code)
 
@@ -590,7 +589,7 @@ objects = liste "object" object
 object = do
     keys <- mapM findRealKey =<< req "primKeys" (liste "string" text)
     position <- dvec0 "position"
-    LSLObject <$> pure keys <*> pure defaultDynamics { _objectPosition = position }
+    pure (LSLObject keys defaultDynamics { _objectPosition = position })
 
 vec = (,,) <$> req "x" val <*> req "y" val <*> req "z" val
 region = (,) <$> req "x" val <*> req "y" val
@@ -695,7 +694,7 @@ avatar = do
         _avatarCameraPosition = (x,y,z),
         _avatarEventHandler = fmap (flip (,) []) handlerName }
 
-findRealKey k = fst <$> get' >>= mlookup k
+findRealKey k = get' >>= mlookup k . fst
 newKey xref = do
     (m,i) <- get'
     let k = mkKey i
@@ -703,7 +702,7 @@ newKey xref = do
     put' (m',i + 1)
     return k
 
-worldXMLAccept s a = evalState (((xmlAcceptT . unWorldXMLAccept) a) s) (M.empty,1)
+worldXMLAccept s a = evalState ((xmlAcceptT . unWorldXMLAccept) a s) (M.empty,1)
 
 newtype WorldXMLAccept a = WorldXMLAccept { unWorldXMLAccept :: AcceptT (SM.State (M.Map String LSLKey, Integer)) a }
     deriving (Monad,Applicative,Functor,MonadXMLAccept)

@@ -1,4 +1,6 @@
-{-# OPTIONS_GHC -XFlexibleContexts -XNoMonomorphismRestriction -XTemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Language.Lsl.Internal.CompilationServer where
 
 import Control.Monad.Except
@@ -58,7 +60,7 @@ parseErrorToErrInfo pe =
                 "expecting" "unexpected" "end of input" (errorMessages pe))
     in ErrInfo (Just x) y
 
-sourcePosToTextLocation pos = (TextLocation line col line col name)
+sourcePosToTextLocation pos = TextLocation line col line col name
     where line = sourceLine pos
           col = sourceColumn pos
           name = sourceName pos
@@ -87,14 +89,14 @@ scriptSummary (CompiledLSLScript _ gs fs ss) = (map sumg gs,map sumf fs ++ ssumm
           sumf (Ctx _ (Func (FuncDec fnm t parms) _)) =
               EPSummary EPFunc (ctxItem fnm) t (map ((\ (Var n t) -> (n,t)) . ctxItem) parms)
 
-validationSummary :: (AugmentedLibrary,[(String,Validity CompiledLSLScript)]) -> ([CompilationStatus],[CompilationStatus])
+validationSummary :: (AugmentedLibrary,[(String,(Validity CompiledLSLScript,[String]))]) -> ([CompilationStatus],[CompilationStatus])
 validationSummary (ms,ss) = (msum,ssum)
     where msum = map mkMSum ms
           ssum = map mkSSum ss
           mkMSum (nm, Left err) = CompilationStatus nm $ Left (map toErrInfo $ codeErrs err)
           mkMSum (nm, Right (lmodule,_)) = CompilationStatus nm $ Right (moduleSummary lmodule)
-          mkSSum (nm, Left err) = CompilationStatus nm $ Left (map toErrInfo $ codeErrs err)
-          mkSSum (nm, Right cscript) = CompilationStatus nm $ Right (scriptSummary cscript)
+          mkSSum (nm, (Left err, _)) = CompilationStatus nm $ Left (map toErrInfo $ codeErrs err)
+          mkSSum (nm, (Right cscript, _)) = CompilationStatus nm $ Right (scriptSummary cscript)
 
 data Tup3 a b c = Tup3 a b c
 
@@ -132,38 +134,46 @@ $(deriveJavaRep ''Tst1)
 
 data CState = CState {
     optimize :: Bool,
+    optChanged :: Bool,
     modulePaths :: M.Map String String,
     scriptPaths :: M.Map String String,
     modules :: M.Map String (Validity (LModule,ModuleInfo)),
-    scripts :: M.Map String (Validity CompiledLSLScript) }
+    scripts :: M.Map String (Validity CompiledLSLScript, [String]) }
 
-emptyCState = CState { optimize = False, modulePaths = M.empty, scriptPaths = M.empty, modules = M.empty, scripts = M.empty }
+emptyCState = CState { optimize = False, optChanged = False, modulePaths = M.empty, scriptPaths = M.empty, modules = M.empty, scripts = M.empty }
+nullCState (CState o oc mp sp ms ss) = not o && not oc && null mp && null sp && null ms && null ss
 
-mkCState (opt,mpaths,spaths) (lib,scripts) =
-    CState { optimize = opt, modulePaths = M.fromList mpaths, scriptPaths = M.fromList spaths, modules = M.fromList lib, scripts = M.fromList scripts }
+mkCState oc (opt,mpaths,spaths) (lib,scripts) =
+    CState { optimize = opt, optChanged = oc, modulePaths = M.fromList mpaths, scriptPaths = M.fromList spaths, modules = M.fromList lib, scripts = M.fromList scripts }
 
 toLib = libFromAugLib . M.toList
 
 handler :: CState -> String -> IO (CState, String)
 handler s0 input = case parse elemDescriptor input of
-   Left s -> return $ (s0, E.emit "error" [] [showString (E.xmlEscape s)] "")
-   Right Nothing -> return $ (s0, E.emit "error" [] [showString ("unexpected root element")] "")
+   Left s -> return (s0, E.emit "error" [] [showString (E.xmlEscape s)] "")
+   Right Nothing -> return (s0, E.emit "error" [] [showString "unexpected root element"] "")
    Right (Just command) -> handleCommand s0 command
 
-handleCommand _ (Init srcInfo) = do
-    compilationResult <- compileAndEmit srcInfo
-    return (mkCState srcInfo compilationResult, xmlSerialize Nothing (FullSourceValidation $ validationSummary compilationResult) "")
+handleInit :: Bool -> CState -> (Bool,[(String,String)],[(String,String)]) -> IO (CState, String)
+handleInit force cs srcInfo = do
+    compilationResult <- compileAndEmit force srcInfo
+    return (mkCState (optChanged cs) srcInfo compilationResult, xmlSerialize Nothing (FullSourceValidation $ validationSummary compilationResult) "")
+
+handleCommand cs (Init srcInfo@(opt,_,scrInfo)) =
+    let cs' = if nullCState cs then cs { optimize = opt } else cs
+        cs'' = cs' { optChanged = optChanged cs' || opt /= optimize cs' }
+    in handleInit (optChanged cs'') cs'' srcInfo
 handleCommand cs (UpdateScript scriptInfo) = do
-    (id,result) <- loadScript (toLib $ modules cs) scriptInfo
+    c@(id,result) <- loadScript (toLib $ modules cs) scriptInfo
     let cs' = cs { scripts = M.insert id result (scripts cs) }
-    renderScriptsToFiles (optimize cs') [(id,result)] [scriptInfo]
+    renderScriptsToFiles True (optimize cs',M.toList $ modulePaths cs',[scriptInfo]) [c]
     return (cs',xmlSerialize Nothing (FullSourceValidation $ validationSummary (M.toList $ modules cs', M.toList $ scripts cs')) "")
 handleCommand cs (UpdateModule minfo) = do -- this doesn't quite do what it says it does (yet)
-    let srcInfo = (optimize cs, M.toList (M.insert (fst minfo) (snd minfo) (modulePaths cs)), M.toList (scriptPaths cs))
-    handleCommand cs (Init srcInfo)
+    let srcInfo = (optimize cs, M.toList (uncurry M.insert minfo (modulePaths cs)), M.toList (scriptPaths cs))
+    handleInit False cs srcInfo
 handleCommand cs (RemoveModule minfo) = do
     let srcInfo = (optimize cs, M.toList (M.delete (fst minfo) (modulePaths cs)),M.toList (scriptPaths cs))
-    handleCommand cs (Init srcInfo)
+    handleInit False cs srcInfo
 handleCommand cs (RemoveScript scriptInfo) = do
     let cs' = cs { scriptPaths = M.delete (fst scriptInfo) (scriptPaths cs), scripts = M.delete (fst scriptInfo) (scripts cs) }
     let summary = FullSourceValidation $ validationSummary (M.toList (modules cs'), M.toList (scripts cs'))
@@ -194,9 +204,9 @@ handleCommand cs (CheckScript (CodeElement name text)) =
 -- take the detail out of a script, leaving just the skeleton...
 simplifyScript :: LSLScript -> LSLScript
 simplifyScript (LSLScript _ gs ss) = LSLScript "" (map simpG gs) (map simpCS ss)
-    where simpCS (Ctx sc s) = (Ctx (simpSC sc) (simpS s))
-          simpS (State cn chs) = (State (simpCN cn) (map simpCH chs))
-          simpCH (Ctx sc h) = (Ctx (simpSC sc) (simpH h))
+    where simpCS (Ctx sc s) = Ctx (simpSC sc) (simpS s)
+          simpS (State cn chs) = State (simpCN cn) (map simpCH chs)
+          simpCH (Ctx sc h) = Ctx (simpSC sc) (simpH h)
           simpH (Handler cn _ _) = Handler (simpCN cn) [] []
 
 -- take the detail out of a script, leaving just the skeleton...
@@ -206,12 +216,12 @@ simplifyModule (LModule gs _) = LModule (map simpG gs) []
 simpG (GV cv _) = GV (simpCV cv) Nothing
 simpG (GF cf) = GF (simpCF cf)
 simpG (GI cn _ _) = GI (simpCN cn) [] ""
-simpCV (Ctx sc v) = (Ctx (simpSC sc) v)
-simpCF (Ctx sc f) = (Ctx (simpSC sc) (simpF f))
-simpCN (Ctx sc n) = (Ctx (simpSC sc) n)
+simpCV (Ctx sc v) = Ctx (simpSC sc) v
+simpCF (Ctx sc f) = Ctx (simpSC sc) (simpF f)
+simpCN (Ctx sc n) = Ctx (simpSC sc) n
 simpSC Nothing = Nothing
-simpSC (Just (SourceContext tl _ _ _)) = (Just (SourceContext tl "" "" []))
-simpF (Func fd _) = (Func fd [])
+simpSC (Just (SourceContext tl _ _ _)) = Just (SourceContext tl "" "" [])
+simpF (Func fd _) = Func fd []
 
 compilationServer :: IO ()
 compilationServer = processLinesSIOB emptyCState "quit" handler

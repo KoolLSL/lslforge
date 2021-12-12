@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XNoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Language.Lsl.Internal.Constants where
 
 import Data.Bits((.|.),shiftL)
@@ -60,7 +60,7 @@ cDebugChannel = 2147483647 :: LSLInteger
 llcDebugChannel = IVal cDebugChannel
 
 cEOF = "\n\n\n"
-llcEOF = (SVal cEOF)
+llcEOF = SVal cEOF
 
 cPermissionControlCamera = 0x800 :: LSLInteger
 llcPermissionControlCamera = IVal cPermissionControlCamera
@@ -119,7 +119,8 @@ cClickActionOpen = 4;llcClickActionOpen :: RealFloat a => LSLValue a; llcClickAc
 cClickActionPlay = 5;llcClickActionPlay :: RealFloat a => LSLValue a; llcClickActionPlay = IVal cClickActionPlay
 cClickActionOpenMedia = 6;llcClickActionOpenMedia :: RealFloat a => LSLValue a; llcClickActionOpenMedia = IVal cClickActionOpenMedia
 cClickActionZoom = 7;llcClickActionZoom :: RealFloat a => LSLValue a; llcClickActionZoom = IVal cClickActionZoom
-cClickActions = [cClickActionTouch,cClickActionSit,cClickActionBuy,cClickActionPay,cClickActionOpen,cClickActionPlay,cClickActionOpenMedia,cClickActionZoom]
+cClickActionDisabled = 8;llcClickActionDisabled :: RealFloat a => LSLValue a; llcClickActionDisabled = IVal cClickActionDisabled
+cClickActions = [cClickActionTouch,cClickActionSit,cClickActionBuy,cClickActionPay,cClickActionOpen,cClickActionPlay,cClickActionOpenMedia,cClickActionZoom,cClickActionDisabled]
 
 cDataBorn = 3;llcDataBorn :: RealFloat a => LSLValue a; llcDataBorn = IVal cDataBorn
 cDataName = 2;llcDataName :: RealFloat a => LSLValue a; llcDataName = IVal cDataName
@@ -297,6 +298,7 @@ allConstants = [
     Constant "CLICK_ACTION_SIT" llcClickActionSit,
     Constant "CLICK_ACTION_TOUCH" llcClickActionTouch,
     Constant "CLICK_ACTION_ZOOM" llcClickActionZoom,
+    Constant "CLICK_ACTION_DISABLED" llcClickActionDisabled,
     Constant "CONTENT_TYPE_ATOM" (IVal 0x04),
     Constant "CONTENT_TYPE_FORM" (IVal 0x07),
     Constant "CONTENT_TYPE_HTML" (IVal 0x01),
@@ -327,6 +329,15 @@ allConstants = [
     Constant "DEBUG_CHANNEL" llcDebugChannel,
     Constant "DEG_TO_RAD" (FVal 0.01745329238),
     Constant "DENSITY" (IVal 1),
+    Constant "ENV_NOT_EXPERIENCE" (IVal (-1)),
+    Constant "ENV_NO_EXPERIENCE_PERMISSION" (IVal (-2)),
+    Constant "ENV_NO_ENVIRONMENT" (IVal (-3)),
+    Constant "ENV_INVALID_AGENT" (IVal (-4)),
+    Constant "ENV_INVALID_RULE" (IVal (-5)),
+    Constant "ENV_VALIDATION_FAIL" (IVal (-6)),
+    Constant "ENV_NO_EXPERIENCE_LAND" (IVal (-7)),
+    Constant "ENV_THROTTLE" (IVal (-8)), -- Not implemented yet?
+    Constant "ENVIRONMENT_DAYINFO" (IVal 200),
     Constant "EOF" $ SVal cEOF,
     Constant "ERR_GENERIC" (IVal (-1)),
     Constant "ERR_MALFORMED_PARAMS" (IVal (-3)),
@@ -346,15 +357,28 @@ allConstants = [
     Constant "GCNP_STATIC" (IVal 1),
     Constant "GRAVITY_MULTIPLIER" (IVal 8),
     Constant "HORIZONTAL" (IVal 1),
+    Constant "HTTP_ACCEPT" (IVal 8),
     Constant "HTTP_BODY_MAXLENGTH" llcHTTPBodyMaxlength,
     Constant "HTTP_BODY_TRUNCATED" llcHTTPBodyTruncated,
     Constant "HTTP_CUSTOM_HEADER" (IVal 5),
+    Constant "HTTP_EXTENDED_ERROR" (IVal 9),
     Constant "HTTP_METHOD" llcHTTPMethod,
     Constant "HTTP_MIMETYPE" llcHTTPMimetype,
     Constant "HTTP_PRAGMA_NO_CACHE" (IVal 6),
     Constant "HTTP_USER_AGENT" (IVal 7),
     Constant "HTTP_VERBOSE_THROTTLE" (IVal 4),
     Constant "HTTP_VERIFY_CERT" llcHTTPVerifyCert,
+    Constant "IMG_USE_BAKED_HEAD" (KVal $ LSLKey "5a9f4a74-30f2-821c-b88d-70499d3e7183"),
+    Constant "IMG_USE_BAKED_UPPER" (KVal $ LSLKey "ae2de45c-d252-50b8-5c6e-19f39ce79317"),
+    Constant "IMG_USE_BAKED_LOWER" (KVal $ LSLKey "24daea5f-0539-cfcf-047f-fbc40b2786ba"),
+    Constant "IMG_USE_BAKED_EYES" (KVal $ LSLKey "52cc6bb6-2ee5-e632-d3ad-50197b1dcb8a"),
+    Constant "IMG_USE_BAKED_SKIRT" (KVal $ LSLKey "43529ce8-7faa-ad92-165a-bc4078371687"),
+    Constant "IMG_USE_BAKED_HAIR" (KVal $ LSLKey "09aac1fb-6bce-0bee-7d44-caac6dbb6c63"),
+    Constant "IMG_USE_BAKED_LEFTARM" (KVal $ LSLKey "ff62763f-d60a-9855-890b-0c96f8f8cd98"),
+    Constant "IMG_USE_BAKED_LEFTLEG" (KVal $ LSLKey "8e915e25-31d1-cc95-ae08-d58a47488251"),
+    Constant "IMG_USE_BAKED_AUX1" (KVal $ LSLKey "9742065b-19b5-297c-858a-29711d539043"),
+    Constant "IMG_USE_BAKED_AUX2" (KVal $ LSLKey "03642e83-2bd1-4eb9-34b4-4c47ed586d2d"),
+    Constant "IMG_USE_BAKED_AUX3" (KVal $ LSLKey "edd51b77-fc10-ce7a-4b3d-011dfc349e4f"),
     Constant "INVENTORY_ALL" llcInventoryAll,
     Constant "INVENTORY_ANIMATION" llcInventoryAnimation,
     Constant "INVENTORY_BODYPART" llcInventoryBodyPart,
@@ -365,6 +389,7 @@ allConstants = [
     Constant "INVENTORY_NOTECARD" llcInventoryNotecard,
     Constant "INVENTORY_OBJECT" llcInventoryObject,
     Constant "INVENTORY_SCRIPT" llcInventoryScript,
+    Constant "INVENTORY_SETTING" (IVal 56), -- TODO: Change to llcInventorySetting
     Constant "INVENTORY_SOUND" llcInventorySound,
     Constant "INVENTORY_TEXTURE" llcInventoryTexture,
     Constant "JSON_APPEND" (IVal (-1)),
@@ -769,6 +794,26 @@ allConstants = [
     Constant "SIT_INVALID_LINK" (IVal (-5)),
     Constant "SIT_NO_ACCESS" (IVal (-6)),
     Constant "SIT_INVALID_OBJECT" (IVal (-7)),
+    Constant "SKY_ABSORPTION_CONFIG" (IVal 16),
+    Constant "SKY_AMBIENT" (IVal 0),
+    Constant "SKY_CLOUD_TEXTURE" (IVal 19),
+    Constant "SKY_CLOUDS" (IVal 2),
+    Constant "SKY_DENSITY_PROFILE_COUNTS" (IVal 3),
+    Constant "SKY_DOME" (IVal 4),
+    Constant "SKY_GAMMA" (IVal 5),
+    Constant "SKY_GLOW" (IVal 6),
+    Constant "SKY_LIGHT" (IVal 8),
+    Constant "SKY_MIE_CONFIG" (IVal 17),
+    Constant "SKY_MOON_TEXTURE" (IVal 20),
+    Constant "SKY_MOON" (IVal 9),
+    Constant "SKY_PLANET" (IVal 10),
+    Constant "SKY_RAYLEIGH_CONFIG" (IVal 18),
+    Constant "SKY_REFRACTION" (IVal 11),
+    Constant "SKY_STAR_BRIGHTNESS" (IVal 13),
+    Constant "SKY_SUN_TEXTURE" (IVal 21),
+    Constant "SKY_SUN" (IVal 14),
+    Constant "SKY_TEXTURE_DEFAULTS" (IVal 1),
+    Constant "SKY_TRACKS" (IVal 15),
     Constant "SMOOTH" (IVal 0x10),
     Constant "SQRT2" (FVal 1.414213538),
     Constant "STATUS_BLOCK_GRAB" (IVal 0x40),
@@ -793,6 +838,8 @@ allConstants = [
     Constant "STRING_TRIM" (IVal 0x03),
     Constant "STRING_TRIM_HEAD" (IVal 0x01),
     Constant "STRING_TRIM_TAIL" (IVal 0x02),
+    Constant "TARGETED_EMAIL_ROOT_CREATOR" (IVal 1),
+    Constant "TARGETED_EMAIL_OBJECT_OWNER" (IVal 2),
     Constant "TEXTURE_BLANK" (KVal $ LSLKey "5748decc-f629-461c-9a36-a35a221fe21f"),
     Constant "TEXTURE_DEFAULT" (KVal $ LSLKey "89556747-24cb-43ed-920b-47caed15465f"),
     Constant "TEXTURE_MEDIA" (KVal $ LSLKey "8b5fec65-8d8d-9dc5-cda8-8fdf2716e361"),
@@ -858,6 +905,14 @@ allConstants = [
     Constant "VEHICLE_VERTICAL_ATTRACTION_TIMESCALE" (IVal 37),
     Constant "VERTICAL" (IVal 0),
     Constant "WANDER_PAUSE_AT_WAYPOINTS" (IVal 0),
+    Constant "WATER_BLUR_MULTIPLIER" (IVal 100),
+    Constant "WATER_FOG" (IVal 101),
+    Constant "WATER_FRESNEL" (IVal 102),
+    Constant "WATER_NORMAL_SCALE" (IVal 104),
+    Constant "WATER_NORMAL_TEXTURE" (IVal 107),
+    Constant "WATER_REFRACTION" (IVal 105),
+    Constant "WATER_TEXTURE_DEFAULTS" (IVal 103),
+    Constant "WATER_WAVE_DIRECTION" (IVal 106),
     Constant "XP_ERROR_NONE" (IVal 0),
     Constant "XP_ERROR_THROTTLED" (IVal 1),
     Constant "XP_ERROR_EXPERIENCES_DISABLED" (IVal 2),
@@ -885,10 +940,10 @@ findConstant :: RealFloat a => String -> Maybe (Constant a)
 findConstant s = find (\ c -> s == constName c) allConstants
 
 findConstVal :: RealFloat a => String -> Maybe (LSLValue a)
-findConstVal s = fmap constVal $ findConstant s
+findConstVal s = constVal <$> findConstant s
 
 findConstType :: String -> Maybe LSLType
-findConstType s = fmap typeOfLSLValue $ findConstVal s
+findConstType s = typeOfLSLValue <$> findConstVal s
 
 isConstant :: String -> Bool
 isConstant s =
