@@ -9,7 +9,7 @@ import qualified Control.Monad.State as State(State)
 import Data.Bits((.&.),(.|.),xor,shiftL,shiftR,complement)
 import Data.Generics
 import Data.Generics.Extras.Schemes(everythingButTwice,downupSkipping,everywhereButM)
-import Data.List(foldl',nub,lookup)
+import Data.List(foldl',nub)
 import Data.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as M

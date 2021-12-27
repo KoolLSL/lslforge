@@ -8,6 +8,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.Exec(
     ScriptImage(..),
+    Eval,
     EvalState,
     ExecutionInfo(..),
     ExecutionState(..),
@@ -30,7 +31,7 @@ module Language.Lsl.Internal.Exec(
 import Control.Monad(foldM_,when,mplus,msum,zipWithM,ap,liftM)
 import Control.Monad.Except(MonadError(..),ExceptT(..),runExceptT)
 import qualified Control.Monad.Fail as F
-import Control.Monad.State(MonadState(..),lift,StateT(..), gets)
+import Control.Monad.State(MonadState(..),StateT(..), gets)
 import Control.Monad.Trans
 import Data.Bits((.&.),(.|.),xor,shiftL,shiftR,complement)
 import Data.List(find,tails, intercalate)
@@ -138,6 +139,9 @@ instance MonadTrans (Eval a) where
 instance Monad m => MonadError String (Eval a m) where
     throwError e = Eval { unEval = throwError e }
     catchError v f = Eval { unEval = catchError (unEval v) (unEval . f) }
+
+instance Monad m => MonadFail (Eval a m) where
+    fail s = Eval { unEval = ExceptT (pure (Left s)) }
 
 instance Monad m => Functor (Eval a m) where
     fmap = liftM
@@ -264,7 +268,7 @@ initVar name LLFloat (Just (IVal i)) = (name,FVal $ fromInt i)
 initVar name LLInteger (Just (FVal f)) = (name,IVal $ floor f)
 initVar name _ (Just v) = (name,v)
 
-writeMem :: Monad m => String -> LSLValue a -> MemRegion a -> m (MemRegion a)
+writeMem :: (Monad m, MonadFail m) => String -> LSLValue a -> MemRegion a -> m (MemRegion a)
 writeMem name value cells =
     case break (\(name',element) -> name' == name) cells of
         (cells',[]) -> fail "no such variable"

@@ -17,7 +17,8 @@ module Control.Monad.Outdated.Error (
     ErrorList(..)
   ) where
 
-import Control.Monad.Fail(MonadFail(..))
+import Control.Monad.Fail()
+import Control.Monad.Identity (Identity (Identity, runIdentity))
 
 -- This class was copied from Control.Monad.Trans.Error
 -- which will be removed from standard library.
@@ -40,3 +41,6 @@ instance ErrorList Char where
 -- This is core to reproduce old Either fail.
 instance Error e => MonadFail (Either e) where
     fail s = Left $ strMsg s
+
+instance MonadFail Identity where
+    fail = Identity . runIdentity . fail

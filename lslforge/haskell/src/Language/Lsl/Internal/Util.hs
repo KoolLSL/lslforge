@@ -144,7 +144,7 @@ fromInt = fromIntegral
 cut :: Int -> Int -> [a] -> ([a],[a])
 cut start end src = (take start src, drop end src)
 
-elemAtM :: (Monad m) => Int -> [a] -> m a
+elemAtM :: (Monad m, MonadFail m) => Int -> [a] -> m a
 elemAtM index list =
     if index >= 0 && index < length list then return (list !! index)
     else fail ("index " ++ show index ++ " out of range")
