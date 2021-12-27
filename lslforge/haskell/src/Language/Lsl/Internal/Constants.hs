@@ -649,6 +649,7 @@ allConstants = [
     Constant "PRIM_POINT_LIGHT" llcPrimPointLight,
     Constant "PRIM_POSITION" llcPrimPosition,
     Constant "PRIM_POS_LOCAL" (IVal 33),
+    Constant "PRIM_PROJECTOR" (IVal 42),
     Constant "PRIM_ROTATION" llcPrimRotation,
     Constant "PRIM_ROT_LOCAL" (IVal 29),
     Constant "PRIM_SCRIPTED_SIT_ONLY" (IVal 40),
