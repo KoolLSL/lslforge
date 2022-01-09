@@ -184,7 +184,7 @@ evaluateExpression t text =
                    (LLFloat,IVal i) -> return $ FVal (fromInt i)
                    _ -> return v
 
-unexpectedValue :: Monad m => m a
+unexpectedValue :: (Monad m, MonadFail m) => m a
 unexpectedValue = fail "unexpected value"
 
 evalCtxExpr (Ctx _ expr) = evalExpr expr

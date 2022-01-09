@@ -97,4 +97,4 @@ lslEventDescriptors = [
 
 simpleLslEventDescriptors =
     map (\ (name,params,_,_,_) ->
-            (name, map (\ (t,_) -> t) params)) lslEventDescriptors
+            (name, map fst params)) lslEventDescriptors

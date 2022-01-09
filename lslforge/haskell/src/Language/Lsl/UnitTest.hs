@@ -45,10 +45,10 @@ lslValuesMatch (FVal a) (FVal b) = a == b ||
     else abs ((b - a) / a) <  0.000001
 lslValuesMatch x y = x == y
 
-matchFail :: Monad m => m a
+matchFail :: (Monad m, MonadFail m) => m a
 matchFail = fail "no matching call"
 
-expectedReturns :: (RealFloat a,Monad m) => String -> [LSLValue a] -> FuncCallExpectations a -> m ((String,[Maybe (LSLValue a)]),LSLValue a)
+expectedReturns :: (RealFloat a,Monad m, MonadFail m) => String -> [LSLValue a] -> FuncCallExpectations a -> m ((String,[Maybe (LSLValue a)]),LSLValue a)
 expectedReturns name args (FuncCallExpectations Strict (match@((name',expectArgs),returns):_)) =
     if name /= name' || isNothing (argsMatch expectArgs args) then matchFail
     else return match

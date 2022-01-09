@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving, NoMonomorphismRestriction #-}
 {-# OPTIONS_GHC -fwarn-unused-binds -fwarn-unused-imports #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE TupleSections #-}
 module Language.Lsl.WorldDef(
     Avatar(..),
     AvatarControlListener(..),
@@ -64,7 +65,7 @@ module Language.Lsl.WorldDef(
     ) where
 
 import Control.Monad(when,foldM)
-import Control.Monad.Except(MonadError(..))
+import Control.Monad.Except(MonadError(..), ExceptT (ExceptT))
 import Control.Monad.State(evalState)
 import Control.Monad.Writer(tell,lift,runWriterT)
 
@@ -692,7 +693,7 @@ avatar = do
         _avatarName = name,
         _avatarPosition = (x,y,z),
         _avatarCameraPosition = (x,y,z),
-        _avatarEventHandler = fmap (flip (,) []) handlerName }
+        _avatarEventHandler = fmap (, []) handlerName }
 
 findRealKey k = get' >>= mlookup k . fst
 newKey xref = do
@@ -707,7 +708,10 @@ worldXMLAccept s a = evalState ((xmlAcceptT . unWorldXMLAccept) a s) (M.empty,1)
 newtype WorldXMLAccept a = WorldXMLAccept { unWorldXMLAccept :: AcceptT (SM.State (M.Map String LSLKey, Integer)) a }
     deriving (Monad,Applicative,Functor,MonadXMLAccept)
 
-get' = WorldXMLAccept $ lift $ SM.get
+instance MonadFail WorldXMLAccept where
+    fail s = WorldXMLAccept { unWorldXMLAccept = AcceptT (ExceptT (pure (Left s))) }
+
+get' = WorldXMLAccept $ lift SM.get
 put' v = WorldXMLAccept $ lift $ SM.put v
 
 instance MonadError String WorldXMLAccept where

@@ -5,10 +5,10 @@ module Language.Lsl.Internal.DOMCombinators where
 
 import Control.Monad.State
 import Control.Monad.Except
-
+import Control.Monad.Outdated.Error ()
 import Data.Maybe
 import Language.Lsl.Internal.DOMProcessing
-import Text.XML.HaXml(Attribute,AttValue(..),Document(..),Element(..),Content(..),Reference(..),xmlParse,info)
+import Text.XML.HaXml(Attribute,AttValue(..),Document(..),Element(..),Content(..),Reference(..),info)
 import Text.XML.HaXml.Posn(Posn(..),noPos)
 import Language.Lsl.Internal.Util(readM)
 import Data.Functor ( (<&>) )
