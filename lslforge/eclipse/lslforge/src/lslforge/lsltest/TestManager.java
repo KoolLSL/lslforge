@@ -16,6 +16,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 
 public class TestManager {
 
@@ -85,7 +86,7 @@ public class TestManager {
         this.numRun = 0;
         this.numFailures = 0;
         this.numErrors = 0;
-        LSLForgePlugin.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
+        PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
             public void run() { showTestRunnerViewPartInActivePage(findTestRunnerViewPartInActivePage());}
         });
         for (Iterator<ITestListener> i = listeners.iterator(); i.hasNext();) {
@@ -102,7 +103,7 @@ public class TestManager {
         IWorkbenchPage page= null;
         try {
             try {
-                page= LSLForgePlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
+                page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
             } catch (NullPointerException e) {
             }
 
@@ -126,7 +127,7 @@ public class TestManager {
     }
 
     private TestRunnerViewPart findTestRunnerViewPartInActivePage() {
-        IWorkbenchPage page= LSLForgePlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
+        IWorkbenchPage page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
         if (page == null)
             return null;
         return (TestRunnerViewPart) page.findView(TestRunnerViewPart.ID);

@@ -12,7 +12,6 @@ import com.thoughtworks.xstream.converters.ConversionException;
 import com.thoughtworks.xstream.converters.Converter;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import com.thoughtworks.xstream.io.ExtendedHierarchicalStreamWriterHelper;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.io.xml.DomDriver;
@@ -36,7 +35,7 @@ public class MapConverter implements Converter {
             writer.setValue(key);
             writer.endNode();
             
-            ExtendedHierarchicalStreamWriterHelper.startNode(writer, "value", value.getClass()); //$NON-NLS-1$
+            writer.startNode("value"); //$NON-NLS-1$
             if (!value.getClass().equals(Object.class)) {
                 writer.addAttribute(mapper.aliasForAttribute("class"), mapper.serializedClass(value.getClass())); //$NON-NLS-1$
             }
@@ -118,6 +117,7 @@ public class MapConverter implements Converter {
     
     public static void main(String[] args) {
         XStream xstream = new XStream(new DomDriver());
+		xstream.allowTypesByWildcard(new String[] { "lslforge.util.**" });
         Mapper mapper = xstream.getMapper();
         
         xstream.alias("valueDB", Map.class); //$NON-NLS-1$

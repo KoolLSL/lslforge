@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Statement_Decl extends Statement{
     public Var el1;
     public Maybe<Ctx<Expr>> el2;

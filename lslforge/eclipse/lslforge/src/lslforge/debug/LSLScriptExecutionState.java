@@ -187,6 +187,7 @@ public class LSLScriptExecutionState {
         configureXStream(xstream);
     }
     public static void configureXStream(XStream xstream) {
+        xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
         xstream.alias("script-state", LSLScriptExecutionState.class); //$NON-NLS-1$
         xstream.alias("frame", Frame.class); //$NON-NLS-1$
         xstream.alias("binding", Binding.class); //$NON-NLS-1$

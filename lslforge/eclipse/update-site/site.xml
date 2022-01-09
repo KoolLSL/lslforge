@@ -12,7 +12,7 @@
    <feature url="features/lslforge_part_linux_x86_64_0.1.9.8.jar" id="lslforge_part_linux_x86_64" version="0.1.9.8" os="linux" arch="">
       <category name="LSLForge_0.1.9.8"/>
    </feature>
-   <feature url="features/lslforge_part_macosx_x86_0.1.9.8.jar" id="lslforge_part_macosx_x86" version="0.1.9.8" os="macosx">
+   <feature url="features/lslforge_part_macosx_x86_64_0.1.9.8.jar" id="lslforge_part_macosx_x86_64" version="0.1.9.8" os="macosx" arch="">
       <category name="LSLForge_0.1.9.8"/>
    </feature>
    <feature url="features/lslforge_part_win32_x86_0.1.9.8.jar" id="lslforge_part_win32_x86" version="0.1.9.8" os="win32" arch="">

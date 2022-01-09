@@ -20,6 +20,7 @@ public class LSLExpressionValidator {
     private static XStream xstream = new XStream(new DomDriver());
     
     static {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.**" });
         xstream.alias("expression", Expr.class); //$NON-NLS-1$
     }
     

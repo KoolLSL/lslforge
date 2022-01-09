@@ -46,6 +46,7 @@ public class LSLTestInteractor implements Runnable, Interactor {
         }
         
         public static void configureXStream(XStream xstream) {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("breakpoint", BreakpointData.class); //$NON-NLS-1$
         }
         
@@ -68,6 +69,7 @@ public class LSLTestInteractor implements Runnable, Interactor {
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("exec-continue", ContinueCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }
@@ -84,6 +86,7 @@ public class LSLTestInteractor implements Runnable, Interactor {
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("exec-step", StepCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }
@@ -100,6 +103,7 @@ public class LSLTestInteractor implements Runnable, Interactor {
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("exec-step-over", StepOverCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }
@@ -116,6 +120,7 @@ public class LSLTestInteractor implements Runnable, Interactor {
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("exec-step-out", StepOutCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }

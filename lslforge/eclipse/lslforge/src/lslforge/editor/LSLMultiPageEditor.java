@@ -302,7 +302,7 @@ public class LSLMultiPageEditor extends MultiPageEditorPart implements IResource
 							//File removed, so remove the tab if necessary
 							
 							//Switch back to main tab first
-							if(currentEditor.equals(compiledPage)) {
+							if(currentEditor.equals(getEditor(compiledPage))) {
 								currentEditor = sourceEditor;
 								getOutlinePage().setPageActive(currentEditor.getOutlinePage());
 							}

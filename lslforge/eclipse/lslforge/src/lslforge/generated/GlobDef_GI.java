@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class GlobDef_GI extends GlobDef{
     public Ctx<String> el1;
     public LinkedList<Tuple2<String,String>> el2;

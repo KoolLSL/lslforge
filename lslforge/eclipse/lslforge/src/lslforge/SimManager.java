@@ -22,6 +22,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
@@ -34,6 +35,7 @@ public class SimManager implements SimEventListener {
         
         static {
             xstream = new XStream(new DomDriver());
+    		xstream.allowTypesByWildcard(new String[] { "lslforge.**" });
             xstream.alias("sim-meta-data", SimMetaData.class); //$NON-NLS-1$
             SimEventDefinition.configureXStream(xstream);
         }
@@ -90,7 +92,7 @@ public class SimManager implements SimEventListener {
     public synchronized void simLaunched(LSLSimProcess process) {
         active = true;
         this.process = process;
-        LSLForgePlugin.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
+        PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
             public void run() { showSimWatcherInActivePage(findSimWatcherInActivePage());}
         });
 
@@ -125,7 +127,7 @@ public class SimManager implements SimEventListener {
         IWorkbenchPage page= null;
         try {
             try {
-                page= LSLForgePlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
+                page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
             } catch (NullPointerException e) {
             }
 
@@ -149,7 +151,7 @@ public class SimManager implements SimEventListener {
     }
 
     private SimWatcherViewPart findSimWatcherInActivePage() {
-        IWorkbenchPage page= LSLForgePlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
+        IWorkbenchPage page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
         if (page == null)
             return null;
         return (SimWatcherViewPart) page.findView(SimWatcherViewPart.ID);

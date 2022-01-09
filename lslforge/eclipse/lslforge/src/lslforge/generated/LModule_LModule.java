@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class LModule_LModule extends LModule{
     public LinkedList<GlobDef> el1;
     public LinkedList<Ctx<Var>> el2;

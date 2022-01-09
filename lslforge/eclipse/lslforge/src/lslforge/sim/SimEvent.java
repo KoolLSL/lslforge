@@ -6,6 +6,7 @@ public class SimEvent {
     private static XStream xstream = new XStream();
     
     public static void configureXStream(XStream xstream) {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.sim.**" });
         xstream.alias("event", SimEvent.class); //$NON-NLS-1$
         xstream.alias("arg", SimEventArg.class); //$NON-NLS-1$
     }

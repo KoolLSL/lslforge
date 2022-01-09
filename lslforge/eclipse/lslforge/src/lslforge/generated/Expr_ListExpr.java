@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Expr_ListExpr extends Expr{
     public LinkedList<Ctx<Expr>> el1;
     public static void init(XStream xstream) {

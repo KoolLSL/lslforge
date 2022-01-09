@@ -18,6 +18,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 public class LSLForgeProjectWizardPage extends WizardPage implements ModifyListener {
+    private static final int SIZING_TEXT_FIELD_WIDTH = 250;
 	private Text nameCtrl;
 	private Label labelCtrl;
 	protected LSLForgeProjectWizardPage(String pageName) {
@@ -38,6 +39,10 @@ public class LSLForgeProjectWizardPage extends WizardPage implements ModifyListe
 		nameCtrl = new Text(pageControl, SWT.SINGLE | SWT.BORDER);
 	    nameCtrl.setEnabled(true);
 	    nameCtrl.addModifyListener(this);
+        GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL
+                | GridData.GRAB_HORIZONTAL);
+        data.widthHint = SIZING_TEXT_FIELD_WIDTH;
+        nameCtrl.setLayoutData(data);
 	    
 	    setControl(pageControl);
 	}

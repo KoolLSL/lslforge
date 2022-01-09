@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Expr_IntLit extends Expr{
     public Integer el1;
     public static void init(XStream xstream) {

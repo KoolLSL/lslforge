@@ -817,6 +817,7 @@ public class TestProject {
     
     private static XStream xstream = new XStream(new DomDriver());
     private static void configureXStream(XStream xstream) {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.lsltest.**" });
         Class<?>[] nodeTypes = new Class[] {
                 SuiteNode.class, TestNode.class, ArgumentNode.class,
                 ArgumentsListNode.class, BindingListNode.class,

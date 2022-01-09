@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class SourceContext_SourceContext extends SourceContext{
     public TextLocation srcTextLocation;
     public String srcPreText;

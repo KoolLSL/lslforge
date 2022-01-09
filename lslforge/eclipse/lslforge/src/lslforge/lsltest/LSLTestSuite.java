@@ -53,6 +53,7 @@ public class LSLTestSuite implements IAdaptable {
 
     private static XStream createXStream() {
         XStream xstream = new XStream(new DomDriver());
+		xstream.allowTypesByWildcard(new String[] { "lslforge.lsltest.**" });
 		xstream.omitField(LSLTest.class, "suite"); //$NON-NLS-1$
 		xstream.alias("tests", LSLTestSuite.class); //$NON-NLS-1$
 		xstream.omitField(LSLTestSuite.class, "resource"); //$NON-NLS-1$

@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class State_State extends State{
     public Ctx<String> el1;
     public LinkedList<Ctx<Handler>> el2;

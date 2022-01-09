@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Expr_BAnd extends Expr{
     public Ctx<Expr> el1;
     public Ctx<Expr> el2;

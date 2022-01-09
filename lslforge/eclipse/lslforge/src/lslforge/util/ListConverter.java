@@ -9,7 +9,6 @@ import com.thoughtworks.xstream.converters.ConversionException;
 import com.thoughtworks.xstream.converters.Converter;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import com.thoughtworks.xstream.io.ExtendedHierarchicalStreamWriterHelper;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.mapper.Mapper;
@@ -21,13 +20,13 @@ public class ListConverter implements Converter {
     }
     
 	public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-	    @SuppressWarnings("unchecked")
+//	    @SuppressWarnings("unchecked")
         List<Object> list = (List<Object>) source;
         
         for (Iterator<Object> iterator = list.iterator(); iterator.hasNext();) {
             Object value = iterator.next();
 
-            ExtendedHierarchicalStreamWriterHelper.startNode(writer, "value", value.getClass()); //$NON-NLS-1$
+            writer.startNode("value"); //$NON-NLS-1$
             if (!value.getClass().equals(Object.class)) {
                 writer.addAttribute(mapper.aliasForAttribute("class"), mapper.serializedClass(value.getClass())); //$NON-NLS-1$
             }
@@ -38,7 +37,7 @@ public class ListConverter implements Converter {
     }
 
 	public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
-	    @SuppressWarnings("unchecked")
+//	    @SuppressWarnings("unchecked")
         List<Object> l = (List<Object>) createCollection(context.getRequiredType());
         while (reader.hasMoreChildren()) {
             reader.moveDown();
