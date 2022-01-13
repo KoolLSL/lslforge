@@ -280,8 +280,8 @@ To test the newly built file, you can specify it in the existing LSLForge Eclips
 * Windows 
     * `set LSLFORGE_TEST_DATA=../testing/data` - enough to be set just for the terminal session.
     * `stack test`
-* Linux / macOS
-    * `LSLFORGE_TEST_DATA=../testing/data; stack test`
+* Linux / macOS on `bash`
+    * `LSLFORGE_TEST_DATA=../testing/data stack test`
 
 ### Version Number Change
 
@@ -300,15 +300,16 @@ Switch to `lslforge` subfolder.
     * Run `all_compile_haskell_win32_as_admin.bat`
     * `eclipse\update-site\clean.bat`
 * Linux
-    * `stack install --executable-stripping`
-    * `codegen.sh`
-    * `copy_linux.sh`
-    * `eclipse/update-site/clean.sh`
+    * `(cd haskell; stack install --executable-stripping)`
+    * `./copy_linux.sh` or `./copy_linux64.sh`
+    * `./codegen.sh`
+    * `(cd eclipse/update-site; ./clean.sh)`
 * macOS
-    * `stack install --executable-stripping`
-    * `codegen_mac.sh`
-    * `copy_mac.sh`
-    * `eclipse/update-site/clean.sh`
+    * ``
+    * `(cd haskell; stack install --executable-stripping)`
+    * `./copy_mac_x86_64.sh`
+    * `./codegen.sh`
+    * `(cd eclipse/update-site; ./clean.sh)`
 
 ### Eclipse Plug-in Compilation
 
