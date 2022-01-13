@@ -19,6 +19,16 @@ Because it is an Eclipse plugin, when you use LSLForge you can take advantage of
 
 ### Changelog
 
+* **0.1.9.9**
+    * [@PellSmit](https://github.com/PellSmit) did an amazing job bringing this version up-to-date with the Mac Silicone, newest Java and Eclipse:
+        * Java update to 11 (`JavaSE-11`), which allows to run the latest Eclipse editions.
+        * Update to `ghc-8.10.7`.
+    * Simulator up to [2022-01-06.567269](https://releasenotes.secondlife.com/simulator/2022-01-06.567269.html)
+        * [2021-10-25.565008](https://releasenotes.secondlife.com/simulator/2021-10-25.565008.html)
+            - [x] [`PRIM_PROJECTOR`](http://wiki.secondlife.com/wiki/PRIM_PROJECTOR)
+            - [ ] (#66) - 1024 bytes returned from [llGetNotecardLine](http://wiki.secondlife.com/wiki/LlGetNotecardLine)
+                  starting with above simulator version.
+
 * **0.1.9.8**
     * Update to `ghc-8.6.5` (Thanks [@PellSmit](https://github.com/PellSmit))
     * Fixed bugs (Thanks [@PellSmit](https://github.com/PellSmit))
