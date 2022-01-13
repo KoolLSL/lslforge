@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class TextLocation_TextLocation extends TextLocation{
     public Integer textLine0;
     public Integer textColumn0;

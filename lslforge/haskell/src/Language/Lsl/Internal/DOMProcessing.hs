@@ -112,7 +112,7 @@ text = do
     setContent []
     return s
 
-val :: (MonadXMLAccept m, Read a) => CAcceptor m a
+val :: (MonadXMLAccept m, Read a, MonadFail m) => CAcceptor m a
 val = text >>= readM
 
 bool = text >>= \case
@@ -197,6 +197,9 @@ instance MonadState (Element Posn) XMLAccept where
 instance MonadError String XMLAccept where
     throwError e = XMLAccept { unXMLAccept = throwError e }
     catchError v f = XMLAccept { unXMLAccept = catchError (unXMLAccept v) (unXMLAccept . f) }
+
+instance MonadFail XMLAccept where
+    fail s = XMLAccept { unXMLAccept = ExceptT (pure (Left s)) }
 
 instance Functor XMLAccept where
     fmap = liftM

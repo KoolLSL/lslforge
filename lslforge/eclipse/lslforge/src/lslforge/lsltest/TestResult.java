@@ -98,6 +98,7 @@ public class TestResult {
     }
     
     public static void configureXStream(XStream xstream) {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.lsltest.**" });
         xstream.alias("test-result", TestResult.class); //$NON-NLS-1$
         xstream.alias("message", LogMessage.class); //$NON-NLS-1$
     }

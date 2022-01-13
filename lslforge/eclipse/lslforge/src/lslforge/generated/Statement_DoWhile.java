@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Statement_DoWhile extends Statement{
     public Ctx<Statement> el1;
     public Ctx<Expr> el2;

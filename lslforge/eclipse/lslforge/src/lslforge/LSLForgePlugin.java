@@ -267,10 +267,10 @@ public class LSLForgePlugin extends AbstractUIPlugin implements IPropertyChangeL
         buf.append("The LSLForge native executable is available from Hackage:\n"); //$NON-NLS-1$ TODO
         buf.append("http://hackage.haskell.org/cgi-bin/hackage-scripts/package/LSLForge\n\n"); //$NON-NLS-1$ TODO
         buf.append("Please also see the Help documentation for LSLForge, under 'Installation'"); //$NON-NLS-1$ TODO
-        getWorkbench().getDisplay().asyncExec(new Runnable() {
+        PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
             public void run() {
                 MessageDialog dlg = new MessageDialog(
-                        getWorkbench().getActiveWorkbenchWindow().getShell(),
+                        PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
                         "LSLForge Native Executable Problem", //$NON-NLS-1$ TODO
                         null,
                         buf.toString(),
@@ -381,6 +381,7 @@ public class LSLForgePlugin extends AbstractUIPlugin implements IPropertyChangeL
             return "Can't evaluate expression (internal error)"; //$NON-NLS-1$ TODO
         }
         XStream xstream = new XStream(new DomDriver());
+		xstream.allowTypesByWildcard(new String[] { "lslforge.**" });
         xstream.alias("result", ValidationResult.class); //$NON-NLS-1$
         ValidationResult e = (ValidationResult) xstream.fromXML(result);
         
@@ -419,6 +420,7 @@ public class LSLForgePlugin extends AbstractUIPlugin implements IPropertyChangeL
         }
         Log.debug("Meta-Data: " + result); //$NON-NLS-1$
         XStream xstream = new XStream(new DomDriver());
+		xstream.allowTypesByWildcard(new String[] { "lslforge.**" });
 
         xstream.alias("lslmeta", LSLMetaData.class); //$NON-NLS-1$
         xstream.alias("handler", LSLHandler.class); //$NON-NLS-1$
@@ -436,7 +438,7 @@ public class LSLForgePlugin extends AbstractUIPlugin implements IPropertyChangeL
     }
 
     public void errorStatusChanged() {
-        getWorkbench().getDisplay().asyncExec(new Runnable() {
+        PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
             public void run() {
                 if (fErrorDecorator != null) {
                     fErrorDecorator.errorStatusChanged();

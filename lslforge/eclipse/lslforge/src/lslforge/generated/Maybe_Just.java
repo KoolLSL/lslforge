@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Maybe_Just<E1> extends Maybe<E1>{
     public E1 el1;
     public static void init(XStream xstream) {

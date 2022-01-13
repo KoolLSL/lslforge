@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Handler_Handler extends Handler{
     public Ctx<String> handlerName;
     public LinkedList<Ctx<Var>> handlerParams;

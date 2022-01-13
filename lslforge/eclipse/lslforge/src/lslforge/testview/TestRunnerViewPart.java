@@ -19,6 +19,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
 /**
@@ -197,6 +198,6 @@ public class TestRunnerViewPart extends ViewPart implements ITestListener {
     };
 
     private void refreshAsync() {
-        LSLForgePlugin.getDefault().getWorkbench().getDisplay().asyncExec(refresher);
+    	PlatformUI.getWorkbench().getDisplay().asyncExec(refresher);
     }
 }

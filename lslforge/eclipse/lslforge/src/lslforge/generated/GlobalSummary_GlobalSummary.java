@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class GlobalSummary_GlobalSummary extends GlobalSummary{
     public String globalName;
     public LSLType globalType;

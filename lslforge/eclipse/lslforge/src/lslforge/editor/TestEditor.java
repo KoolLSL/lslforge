@@ -1043,7 +1043,7 @@ public class TestEditor extends EditorPart implements NodeListener {
     }
     
     private void asyncExec(Runnable r) {
-        LSLForgePlugin.getDefault().getWorkbench().getDisplay().asyncExec(r);
+        PlatformUI.getWorkbench().getDisplay().asyncExec(r);
     }
     
     protected void createUndoRedoActions() {

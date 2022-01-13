@@ -2,10 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: LSLForge
 Bundle-SymbolicName: lslforge; singleton:=true
-Bundle-Version: 0.1.9.8
+Bundle-Version: 0.1.9.9
 Bundle-ClassPath: lslforge.jar,
- antlr-3.4-complete-no-antlrv2.jar,
- xstream-1.4.9.jar,
+ antlr-3.5.2-complete-no-st3.jar,
+ xstream-1.4.18.jar,
  xmlpull-1.1.3.1.jar
 Bundle-Activator: lslforge.LSLForgePlugin
 Bundle-Vendor: LSLForge
@@ -119,25 +119,26 @@ Export-Package: com.thoughtworks.xstream;
  com.thoughtworks.xstream.security;uses:="com.thoughtworks.xstream",
  lslforge;
   uses:="org.eclipse.core.expressions,
+   lslforge.debug,
+   lslforge.util,
+   org.eclipse.jface.util,
+   lslforge.sim,
+   org.eclipse.jface.resource,
+   lslforge.editor.lsl,
    org.eclipse.swt.graphics,
    org.eclipse.swt.widgets,
    lslforge.decorators,
-   lslforge.debug,
    SimStatuses,
    lslforge.lsltest,
    lslforge.language_metadata,
    org.eclipse.ui.plugin,
    lslforge.editor,
    org.osgi.framework,
-   lslforge.util,
    lslforge.cserver,
    org.eclipse.ui,
    org.eclipse.core.runtime,
    org.eclipse.osgi.util,
-   lslforge.sim,
-   org.eclipse.jface.resource,
    lslforge.generated,
-   lslforge.editor.lsl,
    org.eclipse.core.resources",
  lslforge.decorators;uses:="org.eclipse.jface.viewers",
  lslforge.editor;
@@ -232,5 +233,5 @@ Require-Bundle: org.eclipse.core.runtime,
 Bundle-ActivationPolicy: lazy
 Import-Package: com.ibm.icu.text;version="3.6.1",
  org.eclipse.ui.views.contentoutline
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Automatic-Module-Name: lslforge

@@ -1,5 +1,5 @@
 name:           LSLForge
-version:        0.1.9.8
+version:        0.1.9.9
 synopsis:       An execution and testing framework for the Linden Scripting Language (LSL)
 description:
   Provides a framework for executing Linden Scripting Language scripts offline,
@@ -16,7 +16,7 @@ author:         Robert Greayer <robgreayer@yahoo.com>, "Newfie Pendragon" <elnew
 maintainer:	    "Ray Silent" <ray.silent@gmail.com>
 stability:	    experimental
 build-type:     Simple
-tested-with:	  GHC == 8.0.2
+tested-with:	  GHC == 8.10.7
 extra-source-files: NOTICE
 
 executable LSLForge

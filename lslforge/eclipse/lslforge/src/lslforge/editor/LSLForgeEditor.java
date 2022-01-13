@@ -40,6 +40,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 import org.eclipse.ui.texteditor.TextOperationAction;
@@ -376,7 +377,7 @@ public class LSLForgeEditor extends TextEditor implements SourceViewerConfigurat
     }
     
     private void asyncExec(Runnable r) {
-        LSLForgePlugin.getDefault().getWorkbench().getDisplay().asyncExec(r);
+        PlatformUI.getWorkbench().getDisplay().asyncExec(r);
     }
 
 	public void recompile() {

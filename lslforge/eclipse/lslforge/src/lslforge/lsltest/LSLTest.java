@@ -324,6 +324,7 @@ public class LSLTest {
 	}
 	public static void main(String[] args) {
 		XStream xstream = new XStream(new DomDriver());
+		xstream.allowTypesByWildcard(new String[] { "lslforge.lsltest.**" });
 		
 		LSLTest tst = new LSLTest();
 		tst.name = "Sample"; //$NON-NLS-1$

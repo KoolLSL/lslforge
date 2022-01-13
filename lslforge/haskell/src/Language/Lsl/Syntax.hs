@@ -69,12 +69,10 @@ import Language.Lsl.Internal.FuncSigs(funcSigs)
 import Language.Lsl.Internal.AccessGenerator(genAccessorsForType,genMAccessorsForType)
 import Language.Lsl.Internal.Pragmas(Pragma(..))
 import Data.Generics
-import Data.Data(Data,Typeable)
 import Data.List(find,sort,sortBy,nub,nubBy,deleteFirstsBy)
 import qualified Data.Map as M
 import Data.Maybe(isJust,isNothing,mapMaybe, fromMaybe, catMaybes)
 import Language.Lsl.Internal.Util(LSLInteger,ctx,findM,lookupM,filtMap)
-import Control.Monad(when,MonadPlus(..))
 import Control.Monad.Except(MonadError(..))
 import Control.Monad.Outdated.Error(Error(..))
 import qualified Control.Monad.State as S(State)
@@ -279,7 +277,7 @@ msgFromCodeErr = snd
 type Validity a = Either CodeErrs a
 
 instance Error CodeErrs where
-    noMsg = CodeErrs [(Nothing,"")]
+    noMsg = strMsg ""
     strMsg s = CodeErrs [(Nothing,s)]
 
 --------------------

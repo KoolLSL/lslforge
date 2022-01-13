@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class LSLScript_LSLScript extends LSLScript{
     public String el1;
     public LinkedList<GlobDef> el2;

@@ -105,6 +105,7 @@ public class SimStatuses {
     }
     
     public static void configureXStream(XStream xstream) {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.sim.**" });
         LSLScriptExecutionState.configureXStream(xstream);
         xstream.alias("sim-info", SimInfo.class); //$NON-NLS-1$
         xstream.alias("sim-ended", SimEnded.class); //$NON-NLS-1$

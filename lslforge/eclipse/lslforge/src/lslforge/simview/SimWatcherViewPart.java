@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
 public class SimWatcherViewPart extends ViewPart implements SimListener, SimMetaDataListener {
@@ -377,7 +378,7 @@ public class SimWatcherViewPart extends ViewPart implements SimListener, SimMeta
     }
 
     private void asyncExec(Runnable r) {
-        LSLForgePlugin.getDefault().getWorkbench().getDisplay().asyncExec(r);
+        PlatformUI.getWorkbench().getDisplay().asyncExec(r);
     }
     
     private void populateEventsCombo() {

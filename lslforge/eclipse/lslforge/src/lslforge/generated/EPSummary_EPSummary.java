@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class EPSummary_EPSummary extends EPSummary{
     public EPKind epKind;
     public String epName;

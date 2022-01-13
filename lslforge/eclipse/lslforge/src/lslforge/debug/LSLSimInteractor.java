@@ -49,6 +49,7 @@ public class LSLSimInteractor implements Runnable, Interactor, SimEventListener 
         }
         
         public static void configureXStream(XStream xstream) {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("breakpoint", BreakpointData.class); //$NON-NLS-1$
         }
         
@@ -73,6 +74,7 @@ public class LSLSimInteractor implements Runnable, Interactor, SimEventListener 
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("sim-continue", ContinueCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
             SimEvent.configureXStream(xstream);
@@ -90,6 +92,7 @@ public class LSLSimInteractor implements Runnable, Interactor, SimEventListener 
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("sim-step", StepCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }
@@ -106,6 +109,7 @@ public class LSLSimInteractor implements Runnable, Interactor, SimEventListener 
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("sim-step-over", StepOverCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }
@@ -122,6 +126,7 @@ public class LSLSimInteractor implements Runnable, Interactor, SimEventListener 
         }
         
         static {
+            xstream.allowTypesByWildcard(new String[] { "lslforge.debug.**" });
             xstream.alias("sim-step-out", StepOutCommand.class); //$NON-NLS-1$
             BreakpointData.configureXStream(xstream);
         }

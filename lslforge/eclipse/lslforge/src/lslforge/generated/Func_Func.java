@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Func_Func extends Func{
     public FuncDec el1;
     public LinkedList<Ctx<Statement>> el2;

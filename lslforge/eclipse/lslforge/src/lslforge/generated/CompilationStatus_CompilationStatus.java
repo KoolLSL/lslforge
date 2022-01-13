@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class CompilationStatus_CompilationStatus extends CompilationStatus{
     public String csName;
     public Either<LinkedList<ErrInfo>,Tuple2<LinkedList<GlobalSummary>,LinkedList<EPSummary>>> csInfo;

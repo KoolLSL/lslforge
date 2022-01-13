@@ -218,7 +218,7 @@ deriveJavaRep nm = if nm == ''[] then return [] else
                              let classStr = "import com.thoughtworks.xstream.XStream;\n" ++
                                             --(if importList
                                             --     then "import java.util.LinkedList;\n"
-                                            "import java.util.LinkedList;\n" ++
+                                            "import java.util.LinkedList;\n@SuppressWarnings(\"unused\")\n" ++
                                             --     else "") ++
                                             "public class " ++ cname ++ gparms ++
                                             " extends " ++  basenm ++ gparms ++ "{\n" ++

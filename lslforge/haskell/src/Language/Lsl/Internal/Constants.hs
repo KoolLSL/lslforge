@@ -10,14 +10,14 @@ import Language.Lsl.Internal.Util(LSLInteger)
 data Constant a = Constant { constName :: String, constVal :: LSLValue a }
     deriving (Show)
 
-cInventoryAll = (-1);llcInventoryAll :: RealFloat a => LSLValue a;llcInventoryAll = IVal cInventoryAll
+cInventoryAll = -1;llcInventoryAll :: RealFloat a => LSLValue a;llcInventoryAll = IVal cInventoryAll
 cInventoryAnimation = 20;llcInventoryAnimation :: RealFloat a => LSLValue a; llcInventoryAnimation = IVal cInventoryAnimation
 cInventoryBodyPart = 13;llcInventoryBodyPart :: RealFloat a => LSLValue a; llcInventoryBodyPart = IVal cInventoryBodyPart
 cInventoryClothing = 5;llcInventoryClothing :: RealFloat a => LSLValue a; llcInventoryClothing = IVal cInventoryClothing
 cInventoryGesture = 21;llcInventoryGesture :: RealFloat a => LSLValue a; llcInventoryGesture = IVal cInventoryGesture
 cInventoryLandmark = 3;llcInventoryLandmark :: RealFloat a => LSLValue a; llcInventoryLandmark = IVal cInventoryLandmark
 cInventoryNotecard = 7;llcInventoryNotecard :: RealFloat a => LSLValue a; llcInventoryNotecard = IVal cInventoryNotecard
-cInventoryNone = (-1);llcInventoryNone :: RealFloat a => LSLValue a;llcInventoryNone = IVal cInventoryNone
+cInventoryNone = -1;llcInventoryNone :: RealFloat a => LSLValue a;llcInventoryNone = IVal cInventoryNone
 cInventoryObject = 6;llcInventoryObject :: RealFloat a => LSLValue a; llcInventoryObject = IVal cInventoryObject
 cInventoryScript = 10;llcInventoryScript :: RealFloat a => LSLValue a; llcInventoryScript = IVal cInventoryScript
 cInventorySound = 1;llcInventorySound :: RealFloat a => LSLValue a; llcInventorySound = IVal cInventorySound
@@ -649,6 +649,7 @@ allConstants = [
     Constant "PRIM_POINT_LIGHT" llcPrimPointLight,
     Constant "PRIM_POSITION" llcPrimPosition,
     Constant "PRIM_POS_LOCAL" (IVal 33),
+    Constant "PRIM_PROJECTOR" (IVal 42),
     Constant "PRIM_ROTATION" llcPrimRotation,
     Constant "PRIM_ROT_LOCAL" (IVal 29),
     Constant "PRIM_SCRIPTED_SIT_ONLY" (IVal 40),

@@ -16,7 +16,7 @@ import Control.Monad(when,guard)
 import Control.Monad.Loops(anyM)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.UTF8 as UTF8
-import Data.Maybe(Maybe(..),catMaybes,mapMaybe)
+import Data.Maybe(catMaybes,mapMaybe)
 import Data.Time(defaultTimeLocale,formatTime,getZonedTime)
 import Data.Time.Calendar(Day(..))
 import Data.Time.Clock(UTCTime(..),secondsToDiffTime)

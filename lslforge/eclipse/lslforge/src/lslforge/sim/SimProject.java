@@ -1361,6 +1361,7 @@ public class SimProject {
     private static XStream xstream = new XStream(new DomDriver());
     
     private static void configureXStream(XStream xstream) {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.sim.**" });
         Class<?>[] nodeTypes = new Class<?>[] {
                 WorldNode.class, AvatarNode.class, ObjectNode.class,
                 PrimNode.class, ScriptNode.class, GridCoordinateNode.class,

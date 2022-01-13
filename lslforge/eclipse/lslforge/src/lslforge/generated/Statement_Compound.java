@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Statement_Compound extends Statement{
     public LinkedList<Ctx<Statement>> el1;
     public static void init(XStream xstream) {

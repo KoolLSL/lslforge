@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class Statement_If extends Statement{
     public Ctx<Expr> el1;
     public Ctx<Statement> el2;

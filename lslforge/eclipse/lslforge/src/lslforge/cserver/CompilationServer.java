@@ -161,6 +161,8 @@ public class CompilationServer {
 	public CompilationServer() {
 		commandQueue = new LinkedBlockingQueue<CommandAndResult>();
 		xstream = new XStream(new DomDriver());
+        xstream.allowTypesByWildcard(new String[] { "lslforge.generated.**" });
+
 		InitAll.initAll(xstream);
 		interactorThread = new Thread(interactor);
 		monitorThread = new Thread(monitor);

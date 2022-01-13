@@ -245,6 +245,7 @@ public class SimWorldDef {
     private static XStream xstream = new XStream(new DomDriver());
     
     public static void configureXStream(XStream xstream) {
+		xstream.allowTypesByWildcard(new String[] { "lslforge.sim.**" });
         xstream.setMode(XStream.NO_REFERENCES);
         xstream.alias("world-def", SimWorldDef.class); //$NON-NLS-1$
         xstream.alias("avatar", Avatar.class); //$NON-NLS-1$

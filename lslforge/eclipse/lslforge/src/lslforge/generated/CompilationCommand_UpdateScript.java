@@ -1,6 +1,7 @@
 package lslforge.generated;
 import com.thoughtworks.xstream.XStream;
 import java.util.LinkedList;
+@SuppressWarnings("unused")
 public class CompilationCommand_UpdateScript extends CompilationCommand{
     public Tuple2<String,String> el1;
     public static void init(XStream xstream) {
