@@ -16,10 +16,12 @@ cInventoryBodyPart = 13;llcInventoryBodyPart :: RealFloat a => LSLValue a; llcIn
 cInventoryClothing = 5;llcInventoryClothing :: RealFloat a => LSLValue a; llcInventoryClothing = IVal cInventoryClothing
 cInventoryGesture = 21;llcInventoryGesture :: RealFloat a => LSLValue a; llcInventoryGesture = IVal cInventoryGesture
 cInventoryLandmark = 3;llcInventoryLandmark :: RealFloat a => LSLValue a; llcInventoryLandmark = IVal cInventoryLandmark
+cInventoryMaterial = 57;llcInventoryMaterial :: RealFloat a => LSLValue a; llcInventoryMaterial = IVal cInventoryMaterial
 cInventoryNotecard = 7;llcInventoryNotecard :: RealFloat a => LSLValue a; llcInventoryNotecard = IVal cInventoryNotecard
 cInventoryNone = -1;llcInventoryNone :: RealFloat a => LSLValue a;llcInventoryNone = IVal cInventoryNone
 cInventoryObject = 6;llcInventoryObject :: RealFloat a => LSLValue a; llcInventoryObject = IVal cInventoryObject
 cInventoryScript = 10;llcInventoryScript :: RealFloat a => LSLValue a; llcInventoryScript = IVal cInventoryScript
+cInventorySetting = 56;llcInventorySetting :: RealFloat a => LSLValue a; llcInventorySetting = IVal cInventorySetting
 cInventorySound = 1;llcInventorySound :: RealFloat a => LSLValue a; llcInventorySound = IVal cInventorySound
 cInventoryTexture = 0;llcInventoryTexture :: RealFloat a => LSLValue a; llcInventoryTexture = IVal cInventoryTexture
 cPermissionChangeLinks = 0x80 :: LSLInteger
@@ -106,6 +108,7 @@ cPrimType = 9;llcPrimType :: RealFloat a => LSLValue a; llcPrimType = IVal cPrim
 
 cParcelDetailsName = 0;llcParcelDetailsName :: RealFloat a => LSLValue a; llcParcelDetailsName = IVal cParcelDetailsName
 cParcelDetailsDesc = 1;llcParcelDetailsDesc :: RealFloat a => LSLValue a; llcParcelDetailsDesc = IVal cParcelDetailsDesc
+cParcelDetailsFlags = 12;llcParcelDetailsFlags :: RealFloat a => LSLValue a; llcParcelDetailsFlags = IVal cParcelDetailsFlags
 cParcelDetailsOwner = 2;llcParcelDetailsOwner :: RealFloat a => LSLValue a; llcParcelDetailsOwner = IVal cParcelDetailsOwner
 cParcelDetailsGroup = 3;llcParcelDetailsGroup :: RealFloat a => LSLValue a; llcParcelDetailsGroup = IVal cParcelDetailsGroup
 cParcelDetailsArea = 4;llcParcelDetailsArea :: RealFloat a => LSLValue a; llcParcelDetailsArea = IVal cParcelDetailsArea
@@ -264,6 +267,7 @@ allConstants = [
     Constant "CHANGED_OWNER" (IVal 0x80),
     Constant "CHANGED_REGION" (IVal 0x100),
     Constant "CHANGED_REGION_START" llcChangedRegionStart,
+    Constant "CHANGED_RENDER_MATERIAL" (IVal 0x1000),
     Constant "CHANGED_SCALE" (IVal 0x8),
     Constant "CHANGED_SHAPE" (IVal 0x4),
     Constant "CHANGED_TELEPORT" (IVal 0x200),
@@ -296,9 +300,9 @@ allConstants = [
     Constant "CLICK_ACTION_PAY" llcClickActionPay,
     Constant "CLICK_ACTION_PLAY" llcClickActionPlay,
     Constant "CLICK_ACTION_SIT" llcClickActionSit,
+    Constant "CLICK_ACTION_DISABLED" llcClickActionDisabled,
     Constant "CLICK_ACTION_TOUCH" llcClickActionTouch,
     Constant "CLICK_ACTION_ZOOM" llcClickActionZoom,
-    Constant "CLICK_ACTION_DISABLED" llcClickActionDisabled,
     Constant "CONTENT_TYPE_ATOM" (IVal 0x04),
     Constant "CONTENT_TYPE_FORM" (IVal 0x07),
     Constant "CONTENT_TYPE_HTML" (IVal 0x01),
@@ -336,7 +340,7 @@ allConstants = [
     Constant "ENV_INVALID_RULE" (IVal (-5)),
     Constant "ENV_VALIDATION_FAIL" (IVal (-6)),
     Constant "ENV_NO_EXPERIENCE_LAND" (IVal (-7)),
-    Constant "ENV_THROTTLE" (IVal (-8)), -- Not implemented yet?
+    Constant "ENV_THROTTLE" (IVal (-8)),
     Constant "ENVIRONMENT_DAYINFO" (IVal 200),
     Constant "EOF" $ SVal cEOF,
     Constant "ERR_GENERIC" (IVal (-1)),
@@ -385,11 +389,12 @@ allConstants = [
     Constant "INVENTORY_CLOTHING" llcInventoryClothing,
     Constant "INVENTORY_GESTURE" llcInventoryGesture,
     Constant "INVENTORY_LANDMARK" llcInventoryLandmark,
+    Constant "INVENTORY_MATERIAL" llcInventoryMaterial,
     Constant "INVENTORY_NONE" llcInventoryNone,
     Constant "INVENTORY_NOTECARD" llcInventoryNotecard,
     Constant "INVENTORY_OBJECT" llcInventoryObject,
     Constant "INVENTORY_SCRIPT" llcInventoryScript,
-    Constant "INVENTORY_SETTING" (IVal 56), -- TODO: Change to llcInventorySetting
+    Constant "INVENTORY_SETTING" llcInventorySetting,
     Constant "INVENTORY_SOUND" llcInventorySound,
     Constant "INVENTORY_TEXTURE" llcInventoryTexture,
     Constant "JSON_APPEND" (IVal (-1)),
@@ -424,6 +429,15 @@ allConstants = [
     Constant "LAND_REVERT" (IVal 5),
     Constant "LAND_SMALL_BRUSH" (IVal 1),
     Constant "LAND_SMOOTH" (IVal 3),
+    Constant "LINKSETDATA_DELETE" (IVal (2)),
+    Constant "LINKSETDATA_EMEMORY" (IVal (1)),
+    Constant "LINKSETDATA_ENOKEY" (IVal (2)),
+    Constant "LINKSETDATA_EPROTECTED" (IVal (3)),
+    Constant "LINKSETDATA_NOTFOUND" (IVal (4)),
+    Constant "LINKSETDATA_NOUPDATE" (IVal (5)),
+    Constant "LINKSETDATA_OK" (IVal (0)),
+    Constant "LINKSETDATA_RESET" (IVal (0)),
+    Constant "LINKSETDATA_UPDATE" (IVal (1)),
     Constant "LINK_ALL_CHILDREN" (IVal (-3)),
     Constant "LINK_ALL_OTHERS" (IVal (-2)),
     Constant "LINK_ROOT" (IVal 1),
@@ -504,6 +518,7 @@ allConstants = [
     Constant "PARCEL_COUNT_TOTAL" (IVal 0),
     Constant "PARCEL_DETAILS_AREA" llcParcelDetailsArea,
     Constant "PARCEL_DETAILS_DESC" llcParcelDetailsDesc,
+    Constant "PARCEL_DETAILS_FLAGS" llcParcelDetailsFlags,
     Constant "PARCEL_DETAILS_GROUP" llcParcelDetailsGroup,
     Constant "PARCEL_DETAILS_ID" (IVal 5),
     Constant "PARCEL_DETAILS_NAME" llcParcelDetailsName,
@@ -575,8 +590,8 @@ allConstants = [
     Constant "PRIM_ALPHA_MODE" (IVal 38),
     Constant "PRIM_ALPHA_MODE_NONE" (IVal 0),
     Constant "PRIM_ALPHA_MODE_BLEND" (IVal 1),
-    Constant "PRIM_ALPHA_MODE_MASK" (IVal 2),
     Constant "PRIM_ALPHA_MODE_EMISSIVE" (IVal 3),
+    Constant "PRIM_ALPHA_MODE_MASK" (IVal 2),
     Constant "PRIM_BUMP_BARK" (IVal 4),
     Constant "PRIM_BUMP_BLOBS" (IVal 12),
     Constant "PRIM_BUMP_BRICKS" (IVal 5),
@@ -650,6 +665,10 @@ allConstants = [
     Constant "PRIM_POSITION" llcPrimPosition,
     Constant "PRIM_POS_LOCAL" (IVal 33),
     Constant "PRIM_PROJECTOR" (IVal 42),
+    Constant "PRIM_REFLECTION_PROBE" (IVal 44),
+    Constant "PRIM_REFLECTION_PROBE_BOX" (IVal 1),
+    Constant "PRIM_REFLECTION_PROBE_DYNAMIC" (IVal 2),
+    Constant "PRIM_RENDER_MATERIAL" (IVal 43),
     Constant "PRIM_ROTATION" llcPrimRotation,
     Constant "PRIM_ROT_LOCAL" (IVal 29),
     Constant "PRIM_SCRIPTED_SIT_ONLY" (IVal 40),
@@ -816,12 +835,17 @@ allConstants = [
     Constant "SKY_TEXTURE_DEFAULTS" (IVal 1),
     Constant "SKY_TRACKS" (IVal 15),
     Constant "SMOOTH" (IVal 0x10),
+    Constant "SOUND_LOOP" (IVal 0x01),
+    Constant "SOUND_PLAY" (IVal 0x00),
+    Constant "SOUND_SYNC" (IVal 0x02),
+    Constant "SOUND_TRIGGER" (IVal 0x04),
     Constant "SQRT2" (FVal 1.414213538),
     Constant "STATUS_BLOCK_GRAB" (IVal 0x40),
     Constant "STATUS_BLOCK_GRAB_OBJECT" (IVal 0x400),
     Constant "STATUS_BOUNDS_ERROR" (IVal 1002),
     Constant "STATUS_CAST_SHADOWS" (IVal 0x200),
     Constant "STATUS_DIE_AT_EDGE" (IVal 0x80),
+    Constant "STATUS_DIE_AT_NO_ENTRY" (IVal 0x800),
     Constant "STATUS_INTERNAL_ERROR" (IVal 1999),
     Constant "STATUS_MALFORMED_PARAMS" (IVal 1000),
     Constant "STATUS_NOT_FOUND" (IVal 1003),
@@ -839,7 +863,6 @@ allConstants = [
     Constant "STRING_TRIM" (IVal 0x03),
     Constant "STRING_TRIM_HEAD" (IVal 0x01),
     Constant "STRING_TRIM_TAIL" (IVal 0x02),
-    Constant "TARGETED_EMAIL_ROOT_CREATOR" (IVal 1),
     Constant "TARGETED_EMAIL_OBJECT_OWNER" (IVal 2),
     Constant "TEXTURE_BLANK" (KVal $ LSLKey "5748decc-f629-461c-9a36-a35a221fe21f"),
     Constant "TEXTURE_DEFAULT" (KVal $ LSLKey "89556747-24cb-43ed-920b-47caed15465f"),
