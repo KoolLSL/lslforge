@@ -46,6 +46,8 @@ lslEventDescriptors = [
      "raised when a scripted object starts colliding with the ground"),
     ("link_message", [(LLInteger,"sender_num"), (LLInteger,"num"), (LLString,"str"), (LLKey,"id")], EventDeliveryPrim, [],
      "raised when a scripted prim receives a link message, sent via llMessageLinked"),
+    ("linkset_data", [(LLInteger,"action"), (LLString,"name"), (LLString,"value")], EventDeliveryObject, [],
+     "raised in all scripts in a linkset whenever the datastore has been modified through a call to one of the llLinksetData functions"),
     ("listen", [(LLInteger, "channel"), (LLString,"name"), (LLKey,"id"), (LLString,"message")], EventDeliveryScript, [],
      "raised whenever 'chat' is detected that matches constraints specified via a llListen call"),
     ("money",[(LLKey,"id"),(LLInteger,"amount")], EventDeliveryPrim, [],
