@@ -21,8 +21,8 @@ Because it is an Eclipse plugin, when you use LSLForge you can take advantage of
 
 * **0.1.9.10**
     * Still under developement. Trying to add the lastest LSL functions. Tested only in Windows.
-    * Cloned from https://github.com/raysilent/lslforge on 16/10/2022.
-    * Adding the updates made by [@ChloeConstantine](https://github.com/ChloeConstantine). 
+    * Cloned from https://github.com/raysilent/lslforge 0.1.9.9 the 16/01/2023.
+    * Adding updates made by [@ChloeConstantine](https://github.com/ChloeConstantine). 
         
 * **0.1.9.9**
     * [@PellSmit](https://github.com/PellSmit) did an amazing job bringing this version up-to-date with the Mac Silicone, newest Java and Eclipse:
