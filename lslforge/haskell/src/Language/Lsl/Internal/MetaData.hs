@@ -4,7 +4,7 @@ module Language.Lsl.Internal.MetaData where
 
 import Language.Lsl.Internal.Constants(Constant(..),allConstants)
 import Language.Lsl.Internal.EventSigs(lslEventDescriptors)
-import Language.Lsl.Internal.FuncSigs(funcMeta)
+import Language.Lsl.Internal.FuncSigs(functionSigs)
 import Language.Lsl.Internal.InternalLLFuncs(internalLLFuncNames)
 import Language.Lsl.Internal.Type(LSLValue(..),LSLType(..),lslTypeString,lslValString,typeOfLSLValue)
 import qualified Language.Lsl.Internal.XmlCreate as X
@@ -33,7 +33,7 @@ handlers =
     emit "handlers" (map emitHandler lslEventDescriptors)
 
 functions =
-    emit "functions" (map emitFunction funcMeta)
+    emit "functions" (map emitFunction functionSigs)
 
 emitFunction (name,rtype,params,description) =
     emit "function" [
