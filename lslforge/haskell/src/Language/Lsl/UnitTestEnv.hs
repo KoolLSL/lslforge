@@ -24,7 +24,7 @@ import Language.Lsl.Internal.Breakpoint(
     replaceBreakpoints,setStepBreakpoint,setStepOverBreakpoint,
     setStepOutBreakpoint,breakpointFile,breakpointLine)
 import Language.Lsl.Internal.CodeHelper(renderCall)
-import Language.Lsl.Internal.FuncSigs(funcSigs)
+import Language.Lsl.Internal.FuncSigs(functionSigs)
 import Language.Lsl.Internal.InternalLLFuncs(internalLLFuncs)
 import Language.Lsl.Syntax hiding (State)
 import qualified Language.Lsl.Syntax as L
@@ -105,8 +105,8 @@ doPredef n i a = do
                     return (EvalIncomplete,v)
     where handleUnexpected allowed =
               if allowed then
-                  do (_,rt,_) <- ctx ("finding predef  " ++ n) $
-                                  findM (\ (n',_,_) -> n' == n) funcSigs
+                  do (_,rt,_,_) <- ctx ("finding predef  " ++ n) $
+                                  findM (\ (n',_,_,_) -> n' == n) functionSigs
                      return (EvalIncomplete, defaultValue rt)
               else fail ("unexpected call: " ++ renderCall n a)
 
