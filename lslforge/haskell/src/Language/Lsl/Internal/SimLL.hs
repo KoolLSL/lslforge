@@ -55,7 +55,7 @@ import Language.Lsl.Internal.Evaluation(ScriptInfo(..),Event(..),
     EvalResult(..))
 import Language.Lsl.Internal.Exec(ExecutionState(..),ScriptImage(..),hardReset,
     initLSLScript)
-import Language.Lsl.Internal.FuncSigs(funcSigs)
+import Language.Lsl.Internal.FuncSigs(functionSigs)
 import Language.Lsl.Internal.InternalLLFuncs(internalLLFuncs)
 import Language.Lsl.Internal.Key(nullKey,LSLKey(..))
 import Language.Lsl.Internal.Log(LogLevel(..))
@@ -96,7 +96,7 @@ doPredef name info@(ScriptInfo oid pid sid pkey event) args =
    (maybe doDefault runIt . tryPredefs name) =<< getM predefs
     where runIt (t,f) = runErrFunc info name (defaultValue t) args f
           doDefault = do
-               (_,rettype,argtypes) <- either fail return $ findM (\ (x,y,z) -> x == name) funcSigs
+               (_,rettype,argtypes,_) <- either fail return $ findM (\ (x,y,z,d) -> x == name) functionSigs
                logAMessage LogDebug (unLslKey pkey ++ ":" ++ sid)
                    ("unimplemented predefined function called: " ++
                    renderCall name args)
@@ -2560,6 +2560,6 @@ defaultPredefs = M.fromList $ map (\(x,y) -> (x, defaultPredef x y)) [
         ("llWater",llWater)
     ] ++ map (\ (n,f) -> (n, defaultPredef n f)) internalLLFuncs
 
-allFuncs = map (\ (name,_,_) -> name) funcSigs
+allFuncs = map (\ (name,_,_,_) -> name) functionSigs
 implementedFuncs = map fst $ M.toList (defaultPredefs::(M.Map String (PredefFunc Maybe)))
 unimplementedFuncs = S.toList (S.difference (S.fromList allFuncs) (S.fromList implementedFuncs))
