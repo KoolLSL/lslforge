@@ -15,7 +15,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as M
 
 import Language.Lsl.Internal.Constants(allConstants,Constant(..),findConstVal)
-import Language.Lsl.Internal.FuncSigs(funcSigs,convertArgs)
+import Language.Lsl.Internal.FuncSigs(functionSigs,convertArgs)
 import Language.Lsl.Internal.InternalLLFuncs(internalLLFuncs,internalLLFuncNames)
 import Language.Lsl.Internal.Key(LSLKey(..))
 import Language.Lsl.Internal.OptimizerOptions(OptimizerOption(..))
@@ -142,7 +142,7 @@ data OptimizerState = OptimizerState {
 type OState a = State.State OptimizerState a
 
 basicFunctionFacts = M.fromList (zip internalLLFuncNames (repeat (FunctionFacts { isPureFunction = True }))) `M.union`
-                     M.fromList [(nm,FunctionFacts False) | (nm,_,_) <- funcSigs]
+                     M.fromList [(nm,FunctionFacts False) | (nm,_,_,_) <- functionSigs]
 
 freshOptimizerState funFacts fs gnames = OptimizerState {
     optAllFuncs = M.fromList (map (\ f@(Ctx _ (Func (FuncDec nm _ _) _)) -> (ctxItem nm,f)) fs),
