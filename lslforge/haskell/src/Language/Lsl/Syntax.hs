@@ -65,7 +65,7 @@ module Language.Lsl.Syntax (
 import Language.Lsl.Internal.Type(Component(..),LSLType(..),lslTypeString)
 import Language.Lsl.Internal.Constants(isConstant,findConstType)
 import Language.Lsl.Internal.EventSigs(simpleLslEventDescriptors)
-import Language.Lsl.Internal.FuncSigs(funcSigs)
+import Language.Lsl.Internal.FuncSigs(functionSigs)
 import Language.Lsl.Internal.AccessGenerator(genAccessorsForType,genMAccessorsForType)
 import Language.Lsl.Internal.Pragmas(Pragma(..))
 import Data.Generics
@@ -247,9 +247,9 @@ type AugmentedLibrary = [(String,Validity (LModule,ModuleInfo))]
 
 data Codebase = Codebase { codebaseLib :: AugmentedLibrary, codebaseScripts :: [(String,Validity CompiledLSLScript)] }
 
-lslFunc (name,t,ts) =
-    FuncDec (nullCtx name) t (zipWith (\ x y -> nullCtx $ Var [y] x) ts ['a'..])
-predefFuncs = map lslFunc funcSigs
+lslFunc (name,t,ts,d) =
+    FuncDec (nullCtx name) t (zipWith (\ x y -> nullCtx $ Var [y] x) (snd (unzip ts)) ['a'..])
+predefFuncs = map lslFunc functionSigs
 
 findVar name = find (\(Var n _ ) -> n == name)
 findType name =
