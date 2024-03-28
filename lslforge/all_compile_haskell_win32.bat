@@ -1,16 +1,17 @@
 @echo off
 echo Started %date% %time%
-echo ---- Compiling Haskell...
+echo ---- Clean Haskell directory...
 echo.
 cd haskell
 rem remove Stack temp directory
 rmdir ".stack-work" /S /Q
 
+echo ---- Compiling Haskell...
 rem --copy-bins: copy resulting LSLForge.exe to local binary directory %UserProfile%\AppData\Roaming\local\bin\ (see stack path --local-bin)
 rem --executable-stripping: executable stripping for TARGETs and all its dependencies.
 rem --force-dirty: force rebuild of packages even when it doesn't seem necessary based on file dirtiness.
 rem --reconfigure: force reconfiguration even when it doesn't seem necessary based on file dirtiness.
-stack install --executable-stripping --reconfigure --copy-bins
+stack install --executable-stripping --copy-bins
 @echo off
 cd ..
 
