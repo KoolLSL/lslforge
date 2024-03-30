@@ -1,0 +1,899 @@
+[
+	{
+		"function": "llAbs",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "val",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns an integer that is the positive version of val."
+	},
+	{
+		"function": "llAcos",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"name": "val",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Returns the arccosine in radians of val."
+	},
+	{
+		"function": "llAddToLandBanList",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "avatar",
+				"type": "LLKey"
+			},
+			{
+				"name": "hours",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Add avatar to the land ban list for hours."
+	},
+	{
+		"function": "llAddToLandPassList",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "avatar",
+				"type": "LLKey"
+			},
+			{
+				"name": "hours",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Add avatar to the land pass list for hours."
+	},
+	{
+		"function": "llAdjustSoundVolume",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "volume",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Adjusts volume of attached sound (0.0 - 1.0)."
+	},
+	{
+		"function": "llAgentInExperience",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "agent",
+				"type": "LLKey"
+			}
+		],
+		"description": "Determines whether or not the specified agent (in the same region) is in the script's experience. Returns TRUE if the agent is in the experience and the experience can run in the current region."
+	},
+	{
+		"function": "llAllowInventoryDrop",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "add",
+				"type": "LLInteger"
+			}
+		],
+		"description": "If add == TRUE, users without permissions can still drop inventory items onto task."
+	},
+	{
+		"function": "llAngleBetween",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"name": "a",
+				"type": "LLRot"
+			},
+			{
+				"name": "b",
+				"type": "LLRot"
+			}
+		],
+		"description": "Returns angle between rotation a and b."
+	},
+	{
+		"function": "llApplyImpulse",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"force": "LLVector"
+			},
+			{
+				"local": "LLInteger"
+			}
+		],
+		"description": "Applies impulse to object, in local coords if local == TRUE (if the script is physical).\n"
+	},
+	{
+		"function": "llApplyRotationalImpulse",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"force": "LLVector"
+			},
+			{
+				"local": "LLInteger"
+			}
+		],
+		"description": "Applies rotational impulse to object, in local coords if local == TRUE (if the script is physical).\n"
+	},
+	{
+		"function": "llAsin",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"val": "LLFloat"
+			}
+		],
+		"description": "Returns the arcsine in radians of val.\n"
+	},
+	{
+		"function": "llAtan2",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"x": "LLFloat"
+			},
+			{
+				"y": "LLFloat"
+			}
+		],
+		"description": "Returns a float that is the arctangent2 of y, x.\n"
+	},
+	{
+		"function": "llAttachToAvatar",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"attach_point": "LLInteger"
+			}
+		],
+		"description": "Attaches the object to the avatar who has granted permission to the script. The object is taken into the users inventory and attached to attach_point.\n"
+	},
+	{
+		"function": "llAttachToAvatarTemp",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"attach_point": "LLInteger"
+			}
+		],
+		"description": "Same as llAttachToAvatar, with the exception that the object will not create new inventory for the user, and will disappear on detach or disconnect.\n"
+	},
+	{
+		"function": "llAvatarOnLinkSitTarget",
+		"returnType": "LLKey",
+		"arguments": [
+			{
+				"link": "LLInteger"
+			}
+		],
+		"description": "Returns a key that is the UUID of the user seated on the prim.\n"
+	},
+	{
+		"function": "llAvatarOnSitTarget",
+		"returnType": "LLKey",
+		"arguments": [],
+		"description": "If an avatar is sitting on the sit target, return the avatar's key, NULL_KEY otherwise.\n"
+	},
+	{
+		"function": "llAxes2Rot",
+		"returnType": "LLRot",
+		"arguments": [
+			{
+				"name": "fwd",
+				"type": "LLVector"
+			},
+			{
+				"name": "left",
+				"type": "LLVector"
+			},
+			{
+				"name": "up",
+				"type": "LLVector"
+			}
+		],
+		"description": "Returns the rotation defined by the coordinate axes."
+	},
+	{
+		"function": "llAxisAngle2Rot",
+		"returnType": "LLRot",
+		"arguments": [
+			{
+				"name": "axis",
+				"type": "LLVector"
+			},
+			{
+				"name": "angle",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Returns the rotation generated angle about axis."
+	},
+	{
+		"function": "llBase64ToInteger",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "str",
+				"type": "LLString"
+			}
+		],
+		"description": "Big endian decode of a Base64 string into an integer."
+	},
+	{
+		"function": "llBase64ToString",
+		"returnType": "LLString",
+		"arguments": [
+			{
+				"name": "str",
+				"type": "LLString"
+			}
+		],
+		"description": "Converts a Base 64 string to a conventional string. If the conversion creates any unprintable characters, they are converted to spaces."
+	},
+	{
+		"function": "llBreakAllLinks",
+		"returnType": "LLVoid",
+		"arguments": [],
+		"description": "Delinks all tasks in the link set (requires permission PERMISSION_CHANGE_LINKS be set)."
+	},
+	{
+		"function": "llBreakLink",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "linknum",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Delinks the task with the given link number (requires permission PERMISSION_CHANGE_LINKS be set)."
+	},
+	{
+		"function": "llCSV2List",
+		"returnType": "LLList",
+		"arguments": [
+			{
+				"name": "src",
+				"type": "LLString"
+			}
+		],
+		"description": "Create a list from a string of comma separated values."
+	},
+	{
+		"function": "llCastRay",
+		"returnType": "LLList",
+		"arguments": [
+			{
+				"name": "start",
+				"type": "LLVector"
+			},
+			{
+				"name": "end",
+				"type": "LLVector"
+			},
+			{
+				"name": "options",
+				"type": "LLList"
+			}
+		],
+		"description": "Start and end are vectors specifying the start and end point of the ray. The ray must both start and end within the region where the script is located or a script runtime error will be generated. (So be sure to clamp your values!)."
+	},
+	{
+		"function": "llCeil",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "val",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Returns smallest integer value >= val."
+	},
+	{
+		"function": "llChar",
+		"returnType": "LLString",
+		"arguments": [
+			{
+				"name": "val",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Construct a single character string from the supplied Unicode value."
+	},
+	{
+		"function": "llClearCameraParams",
+		"returnType": "LLVoid",
+		"arguments": [],
+		"description": "Resets all camera parameters to default values and turns off scripted camera control."
+	},
+	{
+		"function": "llClearLinkMedia",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "link",
+				"type": "LLInteger"
+			},
+			{
+				"name": "face",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Clears (deletes) the media and all params from the given face on the linked prim(s)."
+	},
+	{
+		"function": "llClearPrimMedia",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "face",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Clears (deletes) the media and all params from the given face."
+	},
+	{
+		"function": "llCloseRemoteDataChannel",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "channel",
+				"type": "LLKey"
+			}
+		],
+		"description": "Closes XML-RPC channel."
+	},
+	{
+		"function": "llCloud",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"name": "v",
+				"type": "LLVector"
+			}
+		],
+		"description": "Returns the cloud density at the object position + v."
+	},
+	{
+		"function": "llCollisionFilter",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "name",
+				"type": "LLString"
+			},
+			{
+				"name": "id",
+				"type": "LLKey"
+			},
+			{
+				"name": "accept",
+				"type": "LLInteger"
+			}
+		],
+		"description": "If accept == TRUE, only accept collisions with objects name and id (either is optional), otherwise with objects not name or id."
+	},
+	{
+		"function": "llCollisionSound",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "impact_sound",
+				"type": "LLString"
+			},
+			{
+				"name": "impact_volume",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Suppress default collision sounds, replace default impact sounds with impact_sound (empty string to just suppress)."
+	},
+	{
+		"function": "llCollisionSprite",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "impact_sprite",
+				"type": "LLString"
+			}
+		],
+		"description": "Suppress default collision sprites, replace default impact sprite with impact_sprite (empty string to just suppress)."
+	},
+	{
+		"function": "llCos",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"name": "theta",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Theta in radians."
+	},
+	{
+		"function": "llCreateCharacter",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "options",
+				"type": "LLList"
+			}
+		],
+		"description": "Creates a pathfinding entity, known as a "character", from the object containing the script."
+	},
+	{
+		"function": "llCreateKeyValue",
+		"returnType": "LLKey",
+		"arguments": [
+			{
+				"name": "k",
+				"type": "LLString"
+			},
+			{
+				"name": "v",
+				"type": "LLString"
+			}
+		],
+		"description": "*** Experience Persistent Storage ***<br/><br/>Start an asynchronous transaction to create a key-value pair associated with the given experience key using the given key and value. Returns a handle (a key) that can be used to identify the corresponding dataserver event to determine if this command succeeded or failed.<br/>string k - The key for the key-value pair<br/>string v - The value for the key-value pair. Maximum 2047 characters, or 4095 if using Mono.<br/>The value for the key-value pair. Maximum 2047 characters, or 4095 if using Mono.<br/>Check wiki for details what dataserver callback returns."
+	},
+	{
+		"function": "llCreateLink",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "target",
+				"type": "LLKey"
+			},
+			{
+				"name": "parent",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Attempt to link task script is attached to and target (requires permission PERMISSION_CHANGE_LINKS be set). If parent == TRUE, task script is attached to is the root."
+	},
+	{
+		"function": "llDataSizeKeyValue",
+		"returnType": "LLKey",
+		"arguments": [],
+		"description": "*** Experience Persistent Storage <br/><br/>Start an asynchronous transaction to request the used and total amount of data allocated for the experience. Returns a handle (a key) that can be used to identify the corresponding dataserver event to determine if this command succeeded or failed and the results.<br/>Check wiki for what dataserver callback returns."
+	},
+	{
+		"function": "llDeleteCharacter",
+		"returnType": "LLVoid",
+		"arguments": [],
+		"description": "Convert the object back to a standard object, removing all pathfinding options."
+	},
+	{
+		"function": "llDeleteKeyValue",
+		"returnType": "LLKey",
+		"arguments": [
+			{
+				"name": "k",
+				"type": "LLString"
+			}
+		],
+		"description": " Experience Persistent Storage ***<br/><br/>Start an asynchronous transaction to delete a key-value pair associated with the given experience key with the given key. Returns a handle (a key) that can be used to identify the corresponding dataserver event to determine if this command succeeded or failed and the results.<br/>string k - The key for the key-value pair<br/>Check wiki for what dataserver callback returns."
+	},
+	{
+		"function": "llDeleteSubList",
+		"returnType": "LLList",
+		"arguments": [
+			{
+				"name": "src",
+				"type": "LLList"
+			},
+			{
+				"name": "start",
+				"type": "LLInteger"
+			},
+			{
+				"name": "end",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Remove the slice from the list and return the remainder."
+	},
+	{
+		"function": "llDeleteSubString",
+		"returnType": "LLString",
+		"arguments": [
+			{
+				"name": "src",
+				"type": "LLString"
+			},
+			{
+				"name": "start",
+				"type": "LLInteger"
+			},
+			{
+				"name": "end",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Removes the indicated substring and returns the result."
+	},
+	{
+		"function": "llDetachFromAvatar",
+		"returnType": "LLVoid",
+		"arguments": [],
+		"description": "Drop off of avatar."
+	},
+	{
+		"function": "llDetectedGrab",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the grab offset of the user touching object (returns <0,0,0> if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedGroup",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns TRUE if detected object is part of same group as owner."
+	},
+	{
+		"function": "llDetectedKey",
+		"returnType": "LLKey",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the key of detected object number (returns empty key if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedLinkNumber",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the link position of the triggered event for touches and collisions only."
+	},
+	{
+		"function": "llDetectedName",
+		"returnType": "LLString",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the name of detected object number (returns empty string if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedOwner",
+		"returnType": "LLKey",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the key of detected object's owner (returns empty key if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedPos",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the position of detected object number (returns <0,0,0> if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedRot",
+		"returnType": "LLRot",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the rotation of detected object number (returns <0,0,0,1> if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedTouchBinormal",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "index",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns a vector that is the surface binormal (tangent to the surface) where the touch event was triggered."
+	},
+	{
+		"function": "llDetectedTouchFace",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "index",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns an integer that is the index of the face the avatar clicked on."
+	},
+	{
+		"function": "llDetectedTouchNormal",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "index",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns a vector that is the surface normal (perpendicular to the surface) where the touch event was triggered."
+	},
+	{
+		"function": "llDetectedTouchPos",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "index",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns a vector that is the position where the object was touched in region coordinates, unless it is attached to the HUD, in which case it returns the position relative to the attach point."
+	},
+	{
+		"function": "llDetectedTouchST",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "index",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns a vector that is the surface coordinates for where the prim was touched. The x & y vector positions contain the horizontal (s) & vertical (t) face coordinates respectively (<s, t, 0.0>). Each component is in the interval [0.0, 1.0]."
+	},
+	{
+		"function": "llDetectedTouchUV",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "index",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns a vector that is the texture coordinates for where the prim was touched. The x & y vector positions contain the u & v face coordinates respectively (<u, v, 0.0>)."
+	},
+	{
+		"function": "llDetectedType",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the type (AGENT, ACTIVE, PASSIVE, SCRIPTED) of detected object (returns 0 if number is not valid sensed object)."
+	},
+	{
+		"function": "llDetectedVel",
+		"returnType": "LLVector",
+		"arguments": [
+			{
+				"name": "number",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Returns the velocity of detected object number (returns &lt;0,0,0&gt; if number is not valid sensed object).\n"
+	},
+	{
+		"function": "llDialog",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "avatar",
+				"type": "LLKey"
+			},
+			{
+				"name": "message",
+				"type": "LLString"
+			},
+			{
+				"name": "buttons",
+				"type": "LLList"
+			},
+			{
+				"name": "chat_channel",
+				"type": "LLInteger"
+			}
+		],
+		"description": "Shows a dialog box on the avatar's screen with the message.<br/>Up to 12 strings in the list form buttons.<br/>If a button is clicked, the name is chatted on chat_channel.\n"
+	},
+	{
+		"function": "llDie",
+		"returnType": "LLVoid",
+		"arguments": [],
+		"description": "Deletes the object.\n"
+	},
+	{
+		"function": "llDumpList2String",
+		"returnType": "LLString",
+		"arguments": [
+			{
+				"name": "src",
+				"type": "LLList"
+			},
+			{
+				"name": "separator",
+				"type": "LLString"
+			}
+		],
+		"description": "Write the list out in a single string using separator between values.\n"
+	},
+	{
+		"function": "llEdgeOfWorld",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "pos",
+				"type": "LLVector"
+			},
+			{
+				"name": "dir",
+				"type": "LLVector"
+			}
+		],
+		"description": "Checks to see whether the border hit by dir from pos is the edge of the world (has no neighboring simulator).\n"
+	},
+	{
+		"function": "llEjectFromLand",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "pest",
+				"type": "LLKey"
+			}
+		],
+		"description": "Ejects pest from land that you own.\n"
+	},
+	{
+		"function": "llEmail",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "address",
+				"type": "LLString"
+			},
+			{
+				"name": "subject",
+				"type": "LLString"
+			},
+			{
+				"name": "message",
+				"type": "LLString"
+			}
+		],
+		"description": "Sends email to address with subject and message.\n"
+	},
+	{
+		"function": "llEscapeURL",
+		"returnType": "LLString",
+		"arguments": [
+			{
+				"name": "url",
+				"type": "LLString"
+			}
+		],
+		"description": "Returns and escaped/encoded version of url, replacing spaces with %20 etc."
+	},
+	{
+		"function": "llEuler2Rot",
+		"returnType": "LLRot",
+		"arguments": [
+			{
+				"name": "v",
+				"type": "LLVector"
+			}
+		],
+		"description": "Returns the rotation representation of Euler Angles v."
+	},
+	{
+		"function": "llEvade",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "target",
+				"type": "LLKey"
+			},
+			{
+				"name": "options",
+				"type": "LLList"
+			}
+		],
+		"description": "Character will try to hide from pursuers."
+	},
+	{
+		"function": "llExecCharacterCmd",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "command",
+				"type": "LLInteger"
+			},
+			{
+				"name": "options",
+				"type": "LLList"
+			}
+		],
+		"description": "Stops the current pathfinding operation or causes the character to jump."
+	},
+	{
+		"function": "llFabs",
+		"returnType": "LLFloat",
+		"arguments": [
+			{
+				"name": "val",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Returns a float that is the positive version of val."
+	},
+	{
+		"function": "llFleeFrom",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "position",
+				"type": "LLVector"
+			},
+			{
+				"name": "distance",
+				"type": "LLFloat"
+			},
+			{
+				"name": "options",
+				"type": "LLList"
+			}
+		],
+		"description": "Directs a character to keep a specific distance from a specific position in the region or adjacent regions."
+	},
+	{
+		"function": "llFloor",
+		"returnType": "LLInteger",
+		"arguments": [
+			{
+				"name": "val",
+				"type": "LLFloat"
+			}
+		],
+		"description": "Returns largest integer value &lt;= val."
+	},
+	{
+		"function": "llForceMouselook",
+		"returnType": "LLVoid",
+		"arguments": [
+			{
+				"name": "mouselook",
+				"type": "LLInteger"
+			}
+		],
+		"description": "If mouselook is TRUE any avatar that sits on this object is forced into mouselook mode."
+	},		
+	convert this array into JSON, show in code window, use this structure: function, returnType, arguments, description:

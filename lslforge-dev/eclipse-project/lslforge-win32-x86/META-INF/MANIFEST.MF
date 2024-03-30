@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: lslforge_win32_x86 Fragment
+Bundle-SymbolicName: lslforge_win32_x86
+Bundle-Version: 0.1.9.12
+Fragment-Host: lslforge;bundle-version="0.1.9.12"
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Automatic-Module-Name: lslforge_win32_x86

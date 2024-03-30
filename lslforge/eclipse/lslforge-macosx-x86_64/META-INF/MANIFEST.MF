@@ -1,8 +1,0 @@
-Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Name: lslforge_macosx_x86_64 Fragment
-Bundle-SymbolicName: lslforge_macosx_x86_64
-Bundle-Version: 0.1.9.9
-Fragment-Host: lslforge;bundle-version="0.1.9.9"
-Bundle-RequiredExecutionEnvironment: JavaSE-11
-Automatic-Module-Name: lslforge_macosx_x86_64

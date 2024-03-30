@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="lslforge_part_linux_x86_64"
+      label="lslforge_part_linux_x86_64"
+      version="0.1.9.12"
+      os="linux">
+
+   <requires>
+      <import plugin="lslforge" version="0.1.9.12" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin
+         id="lslforge_linux_x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"/>
+
+</feature>
