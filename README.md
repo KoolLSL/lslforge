@@ -2,8 +2,6 @@
 
 An LSL Script Editor/compiler for Second Life's Scripting Language.
 
-<img src="doc/logo100x100.jpg" align="right" width="100px" height="100px" margin="20px" padding="20px"/>
-
 LSLForge is a fork of the popular LSLPlus editing environment, to provide Linden Scripting Language (LSL) support in Eclipse.
 
 ## Description
@@ -14,10 +12,21 @@ Because it is an Eclipse plugin, when you use LSLForge you can take advantage of
 
 ## Forks Purposes
 
-* [`raysilent`](https://github.com/raysilent/lslforge): This is a fork where the most activity is happening, which is maintaining the latest LSL definitions for functions and constants of `LSL` according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html), also bug fixes, and keeping the Eclipse Plugin Update Site up-to-date.
+* [`KoolLSL`](https://github.com/KoolLSL/lslforge): Updating since 0.1.9.10, cloned from raysilent
+* [`raysilent`](https://github.com/raysilent/lslforge): This was a fork where the most activity is happening, which is maintaining the latest LSL definitions for functions and constants of `LSL` according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html), also bug fixes, and keeping the Eclipse Plugin Update Site up-to-date.
 * [`elnewfie`](https://github.com/elnewfie/lslforge): After all the tests are accomplished, the repo is merged into the [`elnewfie`](https://github.com/elnewfie/lslforge)'s original repo, to avoid confusion.
 
 ### Changelog
+
+* **0.1.9.12**
+    * Added functions and constants till Simulator Release 2024-02-21.7995320426 (llGetNotecardLineSync, llComputeHash, llRezObjectWithParams...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
+    * Renamed some folders (eclipse to update-site, lslforge to lslforge-dev, lslforge/eclipse to lslforge-dev/eclipse-project)
+    * Updated all_compile_haskell_win32.bat
+    * Compiled only for win32 (not mac, linux)
+     
+* **0.1.9.11**
+    * Added constants: CLICK_ACTION_IGNORE, PRIM_SCULPT_TYPE_MESH, PRIM_SCULPT_FLAG_ANIMESH, SIM_STAT_* 
+    * Added functions: llLinksetDataDeleteFound, llLinksetDataCountFound, llList2ListSlice, llListSortStrided, llListFindStrided
 
 * **0.1.9.10**
     * Still under developement. Trying to add the lastest LSL functions. Tested only in Windows.
@@ -137,23 +146,18 @@ The official group for LSLForge Editor tool is [LSLForge Users](secondlife:///ap
 
 ## Installing
 
-* Java 8 JDK is currently used for generating the plugin. You may find that you need to update to Java 8 or later in order to use the plugin.
+* Java 17 JDK is currently used for generating the plugin. You may find that you need to update to Java 17 or later in order to use the plugin.
 
 ### Eclipse Plugin
-
-#### Incompatible Versions
-
-* **WARNING** Doesn't seem to work in: 
-    * Eclipse IDE `2021-09` R (`4.21.0`)
 
 #### Compatible Versions
 
 The following [Eclipse Distributions](https://www.eclipse.org/downloads/packages/release) were found working:
-
-* Eclipse IDE `2020-12` (`4.18.0`)
-* Eclipse IDE `2019-12` (`4.14.0`)
-* Eclipse IDE `2019‑06` (`4.12.0`)
-* Eclipse Photon (`4.8.0`)
+* Eclipse IDE 2024-03 (4.31.0) since 0.1.9.10
+* Eclipse IDE 2020-12 (4.18.0) till 0.1.9.9
+* Eclipse IDE 2019-12 (4.14.0)
+* Eclipse IDE 2019-06 (4.12.0)
+* Eclipse Photon (4.8.0)
 * Eclipse Oxygen
 
 > NOTE: Oomph seems to restore LSLForge native setting despite attempts to overwrite the field. The only workaround for now is to check `[X] Skip automatic task execution at startup time` under Oomph > Setup Tasks in Preferences. 
