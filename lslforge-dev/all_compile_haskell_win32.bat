@@ -26,10 +26,17 @@ del eclipse-project\lslforge\src\lslforge\generated\*.java
 popd
 
 echo.
+echo ---- Copying Haskell LSLForge.exe to plugin folder
+echo.
+echo on
+xcopy /y %UserProfile%\AppData\Roaming\local\bin\LSLForge.exe eclipse-project\lslforge-win32-x86\os\win32\x86\
+@echo off
+
+echo.
 echo ---- Cleaning Eclipse Update-Site Directory...
 echo.
-call ..\update-site\clean.bat
-echo ---- Now open eclipse-project in Eclipse IDE for RCP, open update-site/site.xml with Site Manifest Editor and Build All
+call eclipse-project\update-site\clean.bat
+echo ---- Next step: open eclipse-project in Eclipse IDE for RCP, open update-site/site.xml with Site Manifest Editor and [Build All]
 popd
 
 pause
