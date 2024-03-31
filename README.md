@@ -1,8 +1,8 @@
 # LSLForge
 
-LSLForge is a plugin for the Eclipse platform. The plugin allows editing, "compiling" (gathering code included in modules), executing, and unit testing your Second Life® Linden Scripting Language (LSL) code.
+LSLForge is a plugin for the Eclipse IDE. The plugin allows editing, "compiling" (gathering code included in modules), executing, and unit testing your Second Life® Linden Scripting Language (LSL) code.
 
-Because it is an Eclipse plugin, when you use LSLForge you can take advantage of many of the useful features of Eclipse. Integrated support of a source code control system such as Git, CVS and Subversion comes for "free", and there are many other features &mdash; task list management, integration with bug tracking tools, etc. You will of course need to make sure you get the appropriate plugins to use these features.
+If offers all the features of Eclipse to your LSL scripts, especially useful for large projects made of multiple scripts: source code control system such as Git, CVS and Subversion, and there are many other features &mdash; task list management, integration with bug tracking tools, version compare, etc. You may need to install appropriate plugins to use certain features.
 
 ## Forks Purposes
 
