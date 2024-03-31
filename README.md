@@ -20,7 +20,7 @@ Because it is an Eclipse plugin, when you use LSLForge you can take advantage of
 
 * **0.1.9.12**
     * Added functions and constants till Simulator Release 2024-02-21.7995320426 (llGetNotecardLineSync, llComputeHash, llRezObjectWithParams...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
-    * Renamed some folders (eclipse to update-site, lslforge to lslforge-dev, lslforge/eclipse to lslforge-dev/eclipse-project)
+    * Renamed some folders (lslforge to lslforge-dev, lslforge/eclipse to lslforge-dev/eclipse-project)
     * Updated all_compile_haskell_win32.bat
     * Compiled only for win32 (not mac, linux)
      
