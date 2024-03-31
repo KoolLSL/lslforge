@@ -1,30 +1,14 @@
+#Specifies intentionally untracked files to ignore
+
 #Compiled output files
 *.class
-*.exe
 *.hi
 *.o
 
 #Eclipse- and VSCode-related files/folders
 .metadata/
+.settings/
 .vscode/
-
-#Update site build output
-lslforge-dev/eclipse-project/update-site/dist/*
-lslforge-dev/eclipse-project/update-site/plugins/*
-lslforge-dev/eclipse-project/update-site/features/*
-lslforge-dev/eclipse-project/update-site/artifacts.*
-lslforge-dev/eclipse-project/update-site/content.*
-
-#Compiled LSLForge executables
-lslforge-dev/eclipse-project/lslforge-linux-x86/os/linux/x86/LSLForge
-lslforge-dev/ecleclipse-projectipse/lslforge-linux-x86_64/os/linux/x86_64/LSLForge
-lslforge-dev/eclipse-project/lslforge-win32-x86/os/win32/x86/LSLForge.exe
-lslforge-dev/eclipse-project/lslforge-macosx-x86/os/macosx/x86/LSLForge
-lslforge-dev/eclipse-project/lslforge-macosx-x86_64/os/macosx/x86_64/LSLForge
-
-#Newfie's ad-hoc build scripts
-lslforge-dev/build_*
-lslforge-dev/copy_*
-lslforge-dev/rename_*
+bin/
 build
 /.project
