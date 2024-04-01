@@ -63,6 +63,7 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 * `*.lslp` files compilation issues although everything is correct. It may happen when a lot of `$import` keywords are used and at some point the compiler gets stuck. What may help is:
     * Adding a fake `*.lslm` module along the project, it could be called `Fake.lslm`. Opening it and adding a space, then removing it and hitting **Save** will force the project to be recompiled
     * Forcing recompilation of a module that is referenced by `*.lslp` file by opening it, doing some fake change, and hitting **Save**
+* For now only the win32 executable is compiled. But you may do your own linux or mac (see how below).
 * The official Second Life® Group for LSLForge Editor tool is [LSLForge Users](secondlife:///app/group/381ff28c-1171-27ac-77f5-ded3471b6245/about). General announcements, questions and answers.
 * In case of bugs please report right to the https://github.com/KoolLSL/lslforge/ repo.
 
