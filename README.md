@@ -1,16 +1,12 @@
 # LSLForge
 
-LSLForge is a plugin for the Eclipse IDE. The plugin allows editing, "compiling" (gathering code included in modules), executing, and unit testing your Second Life® Linden Scripting Language (LSL) code.
+LSLForge is a plugin for the Eclipse IDE. The plugin allows editing, compiling and, optionaly, executing and unit testing offline your Second Life® Linden Scripting Language (LSL) code.
 
-If offers all the features of Eclipse to your LSL scripts, especially useful for large projects made of multiple scripts: source code control system such as Git, CVS and Subversion, and there are many other features &mdash; task list management, integration with bug tracking tools, version compare, etc. You may need to install appropriate plugins to use certain features.
+Compared to simple editors which mainly do syntax check (Visual Studio Code, Sublime Text, LSL Editor...), it offers useful features for large projects made of multiple scripts: modules import (to include your frequent code library), source code control (Git, CVS, Subversion...), task list, bug tracking, file history & difference, etc. You may need to install appropriate plugins to use certain features.
 
-## Forks Purposes
+The aim is to integrate the latest LSL definitions for functions, constants and events LSL according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html)
 
-* [`KoolLSL`](https://github.com/KoolLSL/lslforge): Updating since 0.1.9.10, cloned from raysilent
-* [`raysilent`](https://github.com/raysilent/lslforge): This was a fork where the most activity is happening, which is maintaining the latest LSL definitions for functions and constants of `LSL` according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html), also bug fixes, and keeping the Eclipse Plugin Update Site up-to-date.
-* [`elnewfie`](https://github.com/elnewfie/lslforge): After all the tests are accomplished, the repo is merged into the [`elnewfie`](https://github.com/elnewfie/lslforge)'s original repo, to avoid confusion.
-
-### Changelog
+## Changelog
 
 * **0.1.9.12**
     * Added functions and constants till Simulator Release 2024-02-21.7995320426 (llGetNotecardLineSync, llComputeHash, llRezObjectWithParams...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
@@ -28,7 +24,7 @@ If offers all the features of Eclipse to your LSL scripts, especially useful for
     * Adding updates made by [@ChloeConstantine](https://github.com/ChloeConstantine). 
         
 * **Previous versions**
-    * See https://github.com/raysilent/lslforge/
+    * See https://github.com/raysilent/lslforge and https://github.com/elnewfie/lslforge
 
 ## How to Install the Eclipse Plugin
 
@@ -40,10 +36,10 @@ If offers all the features of Eclipse to your LSL scripts, especially useful for
 2. To install a plugin into Eclipse, choose `Help` > `Install New Software`. Click `Add...` and enter the link for location:
 
 	For the tested and reported to be working releases use `KoolLSL`'s __main__ repo:
-    * `https://raw.githubusercontent.com/KoolLSL/lslforge/main/lslforge-dev/eclipse-project/update-site/`
+    * `https://raw.githubusercontent.com/koollsl/lslforge/main/lslforge-dev/eclipse-project/update-site/`
    
-	Alternatively you may switch to a development fork and try a specific version (including work in progress branches). Example:
-    * `https://raw.githubusercontent.com/KoolLSL/lslforge/0.1.9.12/lslforge-dev/eclipse-project/update-site/`
+	Alternatively you may try a specific version (including work in progress branches). Example:
+    * `https://raw.githubusercontent.com/koollsl/lslforge/0.1.9.12/lslforge-dev/eclipse-project/update-site/`
     
 
 	* For even older version, clone the whole repo and link your Eclipse to a particular folder under `eclipse\archive`.
@@ -52,11 +48,11 @@ If offers all the features of Eclipse to your LSL scripts, especially useful for
  
    > Run `eclipse -clean` to force it to forget cached downloads
 
-3. Checkbox 2 items:
+3. Select two items:
 
 	* "LSLForge"
 	
-	* One of the native parts according to your environment. Ex: "lslforge_part_win32_x86"
+	* One of the native parts according to your environment, ex: "lslforge_part_win32_x86" for Windows
 
 4. Install, accept and restart Eclipse
 
@@ -114,11 +110,13 @@ In the main project that uses `ModulesProject`, place a checkbox along its name 
 
 * EditBox plugin for a better block visualization: http://editbox.sourceforge.net/updates
 
+* Highlight currently selected word: https://marketplace.eclipse.org/content/highlight-selection
+
   
   
 ## Native Executable Compilation
 
-If **LSLForge** is behind from the newest `LSL` definitions of functions and constants, you may compile an executable for yourself, by git cloning the source and digging into `lslforge\haskell\src\Language\Lsl\Internal\FuncSigs.hs` and/or `lslforge\haskell\src\Language\Lsl\Internal\Constants.hs` and following the already existing examples. You will need to compile the code now with Haskell compiler and specify newly built file in Eclipse LSLForge Preferences. This should be enough for a while. Continue reading for details.
+If **LSLForge** is behind from the newest `LSL` definitions of functions and constants, you may compile an executable for yourself, by git cloning the source and digging into `lslforge-dev\haskell\src\Language\Lsl\Internal\FuncSigs.hs`, `lslforge-dev\haskell\src\Language\Lsl\Internal\Constants.hs` and/or `lslforge-dev\haskell\src\Language\Lsl\Internal\EventSigs.hs` and following the already existing examples. You will need to compile the code now with Haskell compiler and specify newly built file in Eclipse LSLForge Preferences. This should be enough for a while. Continue reading for details.
 
 ### Requirements
 
@@ -137,13 +135,13 @@ To install Stack, please visit the [Stack Homepage](https://www.haskellstack.org
 
 ### Compiling Haskell native LSLForge binary
 
-In a terminal, change directory to the project's `lslforge/haskell` subdirectory.
+In a terminal, change directory to the project's `lslforge-dev/haskell` subdirectory.
 
 Run `stack upgrade` to upgrade to the latest version.
 
 You will need to enter `stack setup` if you have a freshly installed Stack, or don't have the relevant compiler already set up. (Stack will tell you if you need to run this additional step.)
 
-Now run with admin terminal `stack install` in `lslforge/haskell` folder to build and install the **LSLForge** binary in one step. (Weird access denied errors are due to Antivirus.)
+Now run with admin terminal `stack install` in `lslforge-dev/haskell` folder to build and install the **LSLForge** binary in one step. (Weird access denied errors are due to Antivirus.)
 
 ### Post-compilation
 
@@ -157,7 +155,7 @@ To test the newly built file, you can specify it in the existing LSLForge Eclips
 
 ### Running Tests
 
-* `cd` to `lslforge/haskell`
+* `cd` to `lslforge-dev/haskell`
 * Windows 
     * `set LSLFORGE_TEST_DATA=../testing/data` - enough to be set just for the terminal session.
     * `stack test`
@@ -168,29 +166,29 @@ To test the newly built file, you can specify it in the existing LSLForge Eclips
 
 * TODO: Automate this task
 
-* `lslforge\haskell\LSLForge.cabal`
-* `lslforge\eclipse\lslforge-feature\feature.xml` (all instances)
-* `lslforge\eclipse\update-site\site.xml` (all instances)
-* All instances in every `feature.xml` and `MANIFEST.MF` files under `lslforge/eclipse`.
+* `lslforge-dev\haskell\LSLForge.cabal`
+* `lslforge-dev\eclipse-project\lslforge-feature\feature.xml` (all instances)
+* `lslforge-dev\eclipse-project\update-site\site.xml` (all instances)
+* All instances in every `feature.xml` and `MANIFEST.MF` files under `lslforge-dev/eclipse-project`.
 
 ### Compile Haskell Executable & Move to Eclipse Plugin Source Location
 
-Switch to `lslforge` subfolder.
+Switch to `lslforge-dev` subfolder.
 
 * Windows
     * Run `all_compile_haskell_win32_as_admin.bat`
-    * `eclipse\update-site\clean.bat`
+    * `eclipse-project\update-site\clean.bat`
 * Linux
     * `(cd haskell; stack install --executable-stripping)`
     * `./copy_linux.sh` or `./copy_linux64.sh`
     * `./codegen.sh`
-    * `(cd eclipse/update-site; ./clean.sh)`
+    * `(cd eclipse-project/update-site; ./clean.sh)`
 * macOS
     * ``
     * `(cd haskell; stack install --executable-stripping)`
     * `./copy_mac_x86_64.sh`
     * `./codegen.sh`
-    * `(cd eclipse/update-site; ./clean.sh)`
+    * `(cd eclipse-project/update-site; ./clean.sh)`
 
 ### Eclipse Plug-in Compilation
 
@@ -198,7 +196,7 @@ Switch to `lslforge` subfolder.
 
 * Eclipse for RCP and RAP Developers (using version 2024-03)
     * Use empty workspace
-    * Import > Projects from Folder or Archive `lslforge\eclipse-project\` (without copying)
+    * Import > Projects from Folder or Archive `lslforge-dev\eclipse-project\` (without copying)
     * If you see artifacts in the `update-site`'s project folder (`features`, `plugins`, `artifacts.jar`, `content.jar`), run `clean.bat` or `clean.sh` to delete them.
     * Double-click `update-site\site.xml` and select `Build All`
         * Generated files are:
