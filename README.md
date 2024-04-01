@@ -2,7 +2,7 @@
 
 LSLForge is a plugin for the Eclipse IDE. The plugin allows editing, compiling and, optionaly, executing and unit testing offline your Second Life® Linden Scripting Language (LSL) code.
 
-Compared to simple editors which mainly do syntax check (Visual Studio Code, Sublime Text, LSL Editor...), it offers useful features for large projects made of multiple scripts: modules import (to include your frequent code library), source code control (Git, CVS, Subversion...), task list, bug tracking, file history & difference, etc. You may need to install appropriate plugins to use certain features.
+Compared to simple editors which mainly do syntax check (Visual Studio Code, Sublime Text, LSL Editor...), it offers useful features for large projects made of multiple scripts: modules import (to include your frequent code library), source code control (Git, CVS, Subversion...), task list, bug tracking, file history & difference, outline, etc. You may need to install appropriate plugins to use certain features.
 
 The aim is to integrate the latest LSL definitions for functions, constants and events LSL according to the recent [Release Notes](https://releasenotes.secondlife.com/categories/simulator.html)
 
@@ -30,33 +30,33 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 1. The following [Eclipse Distributions](https://www.eclipse.org/downloads/packages/release) were found working:
    * Eclipse IDE 2024-03 (4.31.0) since 0.1.9.12, with Java 17 JRE
+  
    > NOTE: Oomph seems to restore LSLForge native setting despite attempts to overwrite the field. The only workaround for now is to check `[X] Skip automatic task execution at startup time` under Oomph  Setup Tasks in Preferences. 
 
 
-2. To install a plugin into Eclipse, choose `Help` > `Install New Software`. Click `Add...` and enter the link for location:
+1. To install a plugin into Eclipse, choose `Help` > `Install New Software`. Click `Add...` and enter the link for location:
 
-	For the tested and reported to be working releases use `KoolLSL`'s __main__ repo:
+	For the tested and reported to be working releases use __main__ repo:
     * `https://raw.githubusercontent.com/koollsl/lslforge/main/lslforge-dev/eclipse-project/update-site/`
    
 	Alternatively you may try a specific version (including work in progress branches). Example:
     * `https://raw.githubusercontent.com/koollsl/lslforge/0.1.9.12/lslforge-dev/eclipse-project/update-site/`
-    
-
-	* For even older version, clone the whole repo and link your Eclipse to a particular folder under `eclipse\archive`.
+          
+	For even older version, clone the whole repo and link your Eclipse to a particular folder under `eclipse\archive`.
 
 	> If you don't see any items for installing, try to uncheck "Group items by category"
  
-   > Run `eclipse -clean` to force it to forget cached downloads
+  	> Run `eclipse -clean` to force it to forget cached downloads
 
-3. Select two items:
+2. Select two items:
 
 	* "LSLForge"
 	
 	* One of the native parts according to your environment, ex: "lslforge_part_win32_x86" for Windows
 
-4. Install, accept and restart Eclipse
+3. Install, accept and restart Eclipse
 
-5. Switch to **LSLForge Perspective** and create a new LSLForge Project
+4. Switch to **LSLForge Perspective** and create a new LSLForge Project
 
 ## Known Issues
 
