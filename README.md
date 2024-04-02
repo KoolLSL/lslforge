@@ -31,16 +31,16 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 1. The following [Eclipse Distributions](https://www.eclipse.org/downloads/packages/release) were found working:
    * Eclipse IDE 2024-03 (4.31.0) since 0.1.9.12, with Java 17 JRE
   
-   > NOTE: Oomph seems to restore LSLForge native setting despite attempts to overwrite the field. The only workaround for now is to check `[X] Skip automatic task execution at startup time` under Oomph  Setup Tasks in Preferences. 
+   * > NOTE: Oomph seems to restore LSLForge native setting despite attempts to overwrite the field. The only workaround for now is to check `[X] Skip automatic task execution at startup time` under Oomph  Setup Tasks in Preferences. 
 
 
 1. To install a plugin into Eclipse, choose `Help` > `Install New Software`. Click `Add...` and enter the link for location:
 
 	For the tested and reported to be working releases use __main__ repo:
-    * `https://raw.githubusercontent.com/koollsl/lslforge/main/lslforge-dev/eclipse-project/update-site/`
+    	`https://raw.githubusercontent.com/koollsl/lslforge/main/lslforge-dev/eclipse-project/update-site/`
    
 	Alternatively you may try a specific version (including work in progress branches). Example:
-    * `https://raw.githubusercontent.com/koollsl/lslforge/0.1.9.12/lslforge-dev/eclipse-project/update-site/`
+    	`https://raw.githubusercontent.com/koollsl/lslforge/0.1.9.12/lslforge-dev/eclipse-project/update-site/`
           
 	For even older version, clone the whole repo and link your Eclipse to a particular folder under `eclipse\archive`.
 
@@ -50,13 +50,14 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 2. Select two items:
 
-	* "LSLForge"
-	
-	* One of the native parts according to your environment, ex: "lslforge_part_win32_x86" for Windows
+	- [x] "LSLForge"	
+	- [x] One of the native parts according to your environment, ex: "lslforge_part_win32_x86" for Windows
 
 3. Install, accept and restart Eclipse
 
 4. Switch to **LSLForge Perspective** and create a new LSLForge Project
+
+   ![image](docs/install-plugin.jpg)
 
 ## Known Issues
 
@@ -208,6 +209,8 @@ Switch to `lslforge-dev` subfolder.
         * Move generated files to `eclipse\`
         
         * Copy `index.html` (static file) to `eclipse\` if it is missing.
+     
+      
 	![image](docs/build-all.jpg)
 
 
