@@ -2,6 +2,7 @@
 
 #Compiled output files
 *.class
+*.exe
 *.hi
 *.o
 
@@ -9,6 +10,14 @@
 .metadata/
 .settings/
 .vscode/
+.stack-work/
 bin/
 build
 /.project
+
+#Compiled LSLForge executables
+lslforge-dev/eclipse-project/lslforge-linux-x86/os/linux/x86/LSLForge
+lslforge-dev/eclipse-project/lslforge-linux-x86_64/os/linux/x86_64/LSLForge
+lslforge-dev/eclipse-project/lslforge-win32-x86/os/win32/x86/LSLForge.exe
+lslforge-dev/eclipse-project/lslforge-macosx-x86/os/macosx/x86/LSLForge
+lslforge-dev/eclipse-project/lslforge-macosx-x86_64/os/macosx/x86_64/LSLForge
