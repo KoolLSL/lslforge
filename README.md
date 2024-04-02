@@ -208,6 +208,8 @@ Switch to `lslforge-dev` subfolder.
         * Move generated files to `eclipse\`
         
         * Copy `index.html` (static file) to `eclipse\` if it is missing.
+	![image](docs/build-all.jpg)
+
 
 * Test generated update site with a fresh installation of Eclipse using Local path for plugin:
     * If you don't want fresh Eclipse, uninstall existing LSLForge plug-in and carefully remove every folder from the Eclipse cache.
