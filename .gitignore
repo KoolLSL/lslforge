@@ -13,7 +13,8 @@
 .stack-work/
 bin/
 build
-/.project
+.project
+.classpath
 
 #Compiled LSLForge executables
 lslforge-dev/eclipse-project/lslforge-linux-x86/os/linux/x86/LSLForge
