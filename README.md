@@ -19,8 +19,8 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
     * Added functions: llLinksetDataDeleteFound, llLinksetDataCountFound, llList2ListSlice, llListSortStrided, llListFindStrided
 
 * **0.1.9.10**
-    * Still under developement. Trying to add the lastest LSL functions. Tested only in Windows.
-    * Cloned from https://github.com/raysilent/lslforge 0.1.9.9 the 16/01/2023.
+    * New repo cloned from https://github.com/raysilent/lslforge 0.1.9.9 the 16/01/2023.
+    * Added some recent LSL functions. Tested only in Windows.
     * Adding updates made by [@ChloeConstantine](https://github.com/ChloeConstantine). 
         
 * **Previous versions**
@@ -36,8 +36,8 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 1. To install a plugin into Eclipse, choose `Help` > `Install New Software`. Click `Add...` and enter the link for location:
 
-	For the tested and reported to be working releases use __main__ repo:
-    	`https://raw.githubusercontent.com/koollsl/lslforge/main/lslforge-dev/eclipse-project/update-site/`
+	For the reported to be working releases use the link below (__/HEAD/__ in capital should always point to the default branch):  
+    	`https://raw.githubusercontent.com/koollsl/lslforge/HEAD/lslforge-dev/eclipse-project/update-site/`
    
 	Alternatively you may try a specific version (including work in progress branches). Example:
     	`https://raw.githubusercontent.com/koollsl/lslforge/0.1.9.12/lslforge-dev/eclipse-project/update-site/`
@@ -51,7 +51,7 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 2. Select two items:
 
 	- [x] "LSLForge"	
-	- [x] One of the native parts according to your environment, ex: "lslforge_part_win32_x86" for Windows
+	- [x] "lslforge_part_win32_x86" for Windows, or the native parts according to your environment 
 
 3. Install, accept and restart Eclipse
 
