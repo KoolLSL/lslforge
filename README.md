@@ -8,6 +8,9 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 ## Changelog
 
+* **develop**
+    * Work in progress...
+      
 * **0.1.9.12**
     * Added functions and constants till Simulator Release 2024-02-21.7995320426 (llGetNotecardLineSync, llComputeHash, llRezObjectWithParams...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
     * Renamed some folders (lslforge to lslforge-dev, lslforge/eclipse to lslforge-dev/eclipse-project)
