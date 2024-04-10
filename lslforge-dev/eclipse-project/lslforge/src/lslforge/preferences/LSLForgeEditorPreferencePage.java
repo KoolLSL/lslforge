@@ -12,6 +12,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import lslforge.LSLForgePlugin;
 import lslforge.editor.lsl.LSLCodeScanner;
+import lslforge.util.LSLColorProvider;
 
 public class LSLForgeEditorPreferencePage extends FieldEditorPreferencePage implements
         IWorkbenchPreferencePage {
@@ -41,10 +42,13 @@ public class LSLForgeEditorPreferencePage extends FieldEditorPreferencePage impl
 //        addField(new ColorFieldEditor(LSLColorProvider.SINGLE_LINE_COMMENT_COLOR, "Single line comment color", getFieldEditorParent()));
 //        addField(new ColorFieldEditor(LSLColorProvider.STRING_COLOR, "String color", getFieldEditorParent()));
 //        addField(new ColorFieldEditor(LSLColorProvider.TYPE_COLOR, "Type color", getFieldEditorParent()));
-
+    	//Kool added
+    	addField(new ColorFieldEditor(LSLColorProvider.BRACKET_COLOR, "Bracket match color", getFieldEditorParent()));
+    	
         for (int i = 0; i < LSLCodeScanner.STYLE_KINDS.length; i++) {
             createFieldEditors(i);
         }
+        
     }
 
     private static String fmt(String pattern, String arg) {

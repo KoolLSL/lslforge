@@ -134,7 +134,10 @@ public class LSLForgeOutlinePage extends ContentOutlinePage
 
 	public void refresh() {
 		TreeViewer viewer = getTreeViewer();
-		if (viewer != null) viewer.refresh();
+		if (viewer != null) {
+			viewer.refresh();
+			viewer.expandAll(); //Kool added 09/04/2024
+		}
 	}
 
 	public void sortItems(boolean sorted) {

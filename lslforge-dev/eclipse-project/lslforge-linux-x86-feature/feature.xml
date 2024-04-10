@@ -2,18 +2,15 @@
 <feature
       id="lslforge_part_linux_x86"
       label="lslforge_part_linux_x86"
-      version="0.1.9.12"
+      version="0.1.9.qualifier"
       os="linux">
 
    <requires>
-      <import plugin="lslforge" version="0.1.9.12" match="greaterOrEqual"/>
+      <import plugin="lslforge" version="0.1.9.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
          id="lslforge_linux_x86"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
+         version="0.1.9.qualifier"/>
 
 </feature>

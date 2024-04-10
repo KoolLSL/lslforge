@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: LSLForge
 Bundle-SymbolicName: lslforge; singleton:=true
-Bundle-Version: 0.1.9.12
+Bundle-Version: 0.1.9.qualifier
 Bundle-ClassPath: lslforge.jar,
  antlr-3.5.2-complete-no-st3.jar,
  xstream-1.4.18.jar,
@@ -122,8 +122,8 @@ Export-Package: com.thoughtworks.xstream;
   uses:="org.eclipse.core.expressions,
    lslforge.debug,
    lslforge.util,
-   org.eclipse.jface.util,
    lslforge.sim,
+   org.eclipse.jface.util,
    org.eclipse.jface.resource,
    lslforge.editor.lsl,
    org.eclipse.swt.graphics,
@@ -154,8 +154,8 @@ Export-Package: com.thoughtworks.xstream;
    org.eclipse.jface.text.reconciler,
    lslforge.editor.lsl,
    org.eclipse.ui.views.contentoutline,
-   org.eclipse.jface.text.rules,
    org.eclipse.ui.part,
+   org.eclipse.jface.text.rules,
    org.eclipse.jface.text.source,
    org.eclipse.swt.graphics,
    org.eclipse.swt.widgets,

@@ -13,11 +13,15 @@ import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.text.IDocumentExtension3;
 import org.eclipse.jface.text.ITextViewerExtension5;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.source.Annotation;
+import org.eclipse.jface.text.source.DefaultCharacterPairMatcher;
 import org.eclipse.jface.text.source.IAnnotationModel;
+import org.eclipse.jface.text.source.ICharacterPairMatcher;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.IVerticalRuler;
 import org.eclipse.jface.text.source.projection.ProjectionAnnotation;
@@ -33,9 +37,11 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
+import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 import org.eclipse.ui.texteditor.TextOperationAction;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
+import lslforge.LSLForgePlugin;
 import lslforge.LSLProjectNature;
 import lslforge.debug.LSLLineBreakpoint;
 import lslforge.generated.ErrInfo;
@@ -44,14 +50,14 @@ import lslforge.generated.Maybe_Just;
 import lslforge.generated.TextLocation;
 import lslforge.generated.TextLocation_TextLocation;
 import lslforge.outline.LSLForgeOutlinePage;
+import lslforge.util.LSLColorProvider;
 import lslforge.util.Log;
 import lslforge.util.Util;
 
 /**
  * LSLForge text editor.
- * @param <ICharacterPairMatcher>
  */
-public class LSLForgeEditor<ICharacterPairMatcher> extends TextEditor implements SourceViewerConfigurationListener, LSLProjectNature.RecompileListener {
+public class LSLForgeEditor extends TextEditor implements SourceViewerConfigurationListener, LSLProjectNature.RecompileListener {
 	@Deprecated
 	@Override
 	public void gotoMarker(IMarker marker) {
@@ -87,7 +93,32 @@ public class LSLForgeEditor<ICharacterPairMatcher> extends TextEditor implements
     public LSLForgeEditor() {
         super();
     }
-
+    
+    //Kool added 06/04/2024
+    public final static String EDITOR_MATCHING_BRACKETS = "matchingBrackets";
+    public final static String EDITOR_MATCHING_BRACKETS_COLOR= "matchingBracketsColor";
+    
+    @Override
+    protected void configureSourceViewerDecorationSupport (SourceViewerDecorationSupport support) {
+    	super.configureSourceViewerDecorationSupport(support);		
+    	
+    	char[] matchChars = {'(', ')', '{', '}', '[', ']'}; //which brackets to match		
+    	ICharacterPairMatcher matcher = (ICharacterPairMatcher) new DefaultCharacterPairMatcher(matchChars ,
+    			IDocumentExtension3.DEFAULT_PARTITIONING);
+    	support.setCharacterPairMatcher((org.eclipse.jface.text.source.ICharacterPairMatcher) matcher);    	
+    	//We copy our plugin store value to the general store value. Not ideal but is there another way ? 
+    	Color col = LSLForgePlugin.getDefault().getLSLColorProvider().getColor(LSLColorProvider.BRACKET_COLOR);
+    	String colStr =  new String(col.getRed() + ", " + col.getGreen() + ", " + col.getBlue());
+    	//Ex: String colStr = "0,255,0"; 
+    	//Enable bracket highlighting in the preference store
+    	IPreferenceStore store = getPreferenceStore();
+    	store.setDefault(EDITOR_MATCHING_BRACKETS, true);
+    	store.setDefault(EDITOR_MATCHING_BRACKETS_COLOR, colStr);	
+    	support.setMatchingCharacterPainterPreferenceKeys(EDITOR_MATCHING_BRACKETS, EDITOR_MATCHING_BRACKETS_COLOR
+    				, EDITOR_MATCHING_BRACKETS, EDITOR_MATCHING_BRACKETS);    	   	
+    }          
+    //endof Kool
+    
     @Override
 	public boolean isEditable() {
     	if(forceReadOnly) return false;

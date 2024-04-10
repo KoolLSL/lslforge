@@ -27,6 +27,7 @@ public class LSLColorProvider implements IPropertyChangeListener {
     public static final String SINGLE_LINE_COMMENT_COLOR = "single_line_comment.color"; //$NON-NLS-1$
     public static final String STRING_COLOR              = "string.color"; //$NON-NLS-1$
     public static final String TYPE_COLOR                = "type.color"; //$NON-NLS-1$
+    public static final String BRACKET_COLOR             = "bracket.color"; //$NON-NLS-1$
 
     private static final RGB DEFAULT             = new RGB(0, 0, 0);
     private static final RGB HANDLER             = new RGB(0, 0, 128);
@@ -37,6 +38,7 @@ public class LSLColorProvider implements IPropertyChangeListener {
     private static final RGB SINGLE_LINE_COMMENT = new RGB(64, 64, 128);
     private static final RGB STRING              = new RGB(0, 128, 128);
     private static final RGB TYPE                = new RGB(0, 0, 128);
+    private static final RGB BRACKET             = new RGB(199, 134, 57);
 
     protected Map<RGB, Color> colorTable = new HashMap<>(10);
     private HashSet<ColorProviderListener> listeners = new HashSet<>();
@@ -52,6 +54,7 @@ public class LSLColorProvider implements IPropertyChangeListener {
         PreferenceConverter.setDefault(store, SINGLE_LINE_COMMENT_COLOR, SINGLE_LINE_COMMENT);
         PreferenceConverter.setDefault(store, STRING_COLOR, STRING);
         PreferenceConverter.setDefault(store, TYPE_COLOR, TYPE);
+        PreferenceConverter.setDefault(store, BRACKET_COLOR, BRACKET);
         this.store = store;
         store.addPropertyChangeListener(this);
 

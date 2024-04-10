@@ -1,2 +1,2 @@
-If you just want to use the already compiled LSLForge plugin, this is the repository to install in Eclipse.
+If you just need the compiled LSLForge plugin, this is the repository to add in Eclipse Available Software Sites.
 

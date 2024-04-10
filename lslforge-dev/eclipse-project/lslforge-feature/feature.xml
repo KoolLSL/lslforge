@@ -2,8 +2,12 @@
 <feature
       id="lslforge"
       label="LSLforge"
-      version="0.1.9.12">
+      version="0.1.9.qualifier">
    <install-handler library="" handler=""/>
+
+   <description>
+      Main plugin. Always install.
+   </description>
 
    <copyright>
       Except where otherwise indicated the LSLForge Plug-in was written
@@ -22,10 +26,12 @@ is provided.
 A portion of this plugin constitutes a work that uses the
 HaXml library, which has the following copyright:
 --------------------------------------------------------------------
-The HaXml library and tools were written by and are copyright to
+The HaXml library and tools were written by and are copyright
+to
 (c) copyright 1998-2006    Malcolm Wallace and Colin Runciman
 The library incorporates the module Text.ParserCombinators.HuttonMeijerWallace
-(c) copyright 1996         Graham Hutton and Erik Meijer with modifications
+(c) copyright 1996         Graham Hutton and Erik Meijer with
+modifications
 (c) copyright 1998-2000    Malcolm Wallace
 The HaXml library is licensed under the terms of the GNU Lesser
 General Public Licence (LGPL), which can be found in the file
@@ -105,8 +111,6 @@ THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS&apos;&apos; AND ANY EXPRESS OR I
 
    <plugin
          id="lslforge"
-         download-size="0"
-         install-size="0"
-         version="0.1.9.12"/>
+         version="0.1.9.qualifier"/>
 
 </feature>

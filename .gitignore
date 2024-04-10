@@ -13,7 +13,6 @@
 .stack-work/
 bin/
 build
-.project
 .classpath
 
 #Compiled LSLForge executables

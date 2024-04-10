@@ -2,7 +2,7 @@
 <feature
       id="lslforge_part_win32_x86"
       label="lslforge_part_win32_x86"
-      version="0.1.9.12"
+      version="0.1.9.qualifier"
       os="win32">
 
    <requires>
@@ -11,9 +11,6 @@
 
    <plugin
          id="lslforge_win32_x86"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
+         version="0.1.9.qualifier"/>
 
 </feature>
