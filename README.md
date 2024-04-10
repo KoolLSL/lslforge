@@ -8,8 +8,12 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 ## Changelog
 
-* **develop**
+* **develop** (future 0.1.9.13)
     * Work in progress...
+    * Editor: brackets matching (color in Preferences)
+    * Editor: outline always expanded
+    * Plugins version number use date (.qualifier) for easier update
+    * Added more functions and constants (llSetLinkSitFlags, llGetLinkSitFlags, PRIM_GLTF_..., DAMAGE_TYPE_...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
       
 * **0.1.9.12**
     * Added functions and constants till Simulator Release 2024-02-21.7995320426 (llGetNotecardLineSync, llComputeHash, llRezObjectWithParams...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
