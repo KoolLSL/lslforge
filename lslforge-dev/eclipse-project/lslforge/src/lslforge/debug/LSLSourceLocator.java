@@ -26,8 +26,7 @@ public class LSLSourceLocator implements ISourceLocator, ISourcePresentation {
 
             IWorkspace w = ResourcesPlugin.getWorkspace();
 
-            IFile[] files = w.getRoot().findFilesForLocationURI(URI.create(p.makeAbsolute().toString()));
-            //IFile[] files = w.getRoot().findFilesForLocation(p);
+            IFile[] files = w.getRoot().findFilesForLocationURI(p.makeAbsolute().toFile().toURI());
 
             if (files != null && files.length > 0) return files[0];
         }
