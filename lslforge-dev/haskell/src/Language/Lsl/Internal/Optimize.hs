@@ -857,6 +857,14 @@ valToExpr (RVal x y z s) = RotExpr (nullCtx $ floatToLit x) (nullCtx $ floatToLi
 valToExpr (LVal l) = ListExpr (map (nullCtx . valToExpr) l)
 valToExpr VoidVal = error "can't convert the void value to an expression"
 
+isValidStringLitChar :: Char -> Bool
+isValidStringLitChar c = c >= '\x20' || c == '\n'
+
+isValidLit :: LSLValue a -> Bool
+isValidLit (SVal s) = all isValidStringLitChar s
+isValidLit VoidVal = False
+isValidLit x = True
+
 predefToLit :: String -> Maybe Expr
 predefToLit s = fmap valToExpr (findConstVal s)
 
@@ -976,7 +984,12 @@ simplifyE e@(Call (Ctx _ nm) exprs) =
         Nothing -> return e
         Just vs ->
             case lookup nm internalLLFuncs of
-                Just f -> return (valToExpr $ snd (Id.runIdentity (f () (convertArgs nm vs))))
+                Just f -> do
+                    let rval = snd (Id.runIdentity (f () (convertArgs nm vs)))
+                    -- Make sure we have a literal that can be represented.
+                    if (isValidLit rval)
+                        then return (valToExpr $ rval)
+                        else return e
                 Nothing -> do
                     pureFuncs <- get <&> siPureFuncs
                     script <- get <&> siScript
