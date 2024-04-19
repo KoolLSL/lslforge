@@ -527,17 +527,36 @@ llList2ListStrided _ [LVal src, IVal start, IVal end, IVal stride] =
     in
         continueWith $ LVal $ subList stridedSrc (fromInt start') (fromInt end')
 
-strideList l stride =
-    if length l <= stride || stride <= 1 then [l] else take stride l:strideList (drop stride l) stride
+strideList :: Int -> [l] -> [[l]]
+strideList n = foldr (\v l ->
+    case l of
+        (x:xs) -> if length x < n then (v:x):xs else [v]:l
+        _ -> [[v]]
+    ) []
 
 llListSort _ [LVal list, IVal stride, IVal ascending] =
   let Just (IVal true) = findConstVal "TRUE" -- this will crash if true isn't defined...
       -- according to the documentation for this function
       -- ascending must EQUAL the constant TRUE, or sort
       -- will be descending (which is odd)
+      -- Note: there are a bunch of weird behaviors that llListSort has when
+      --   dealing with mixed types (especially in descending order), these are
+      --   not proerply modeled.
       direction = if ascending == true then id else reverse
-  in continueWith $ LVal $
-      concat (direction $ sort $ strideList list (fromInt stride))
+      normStride = if (fromInt stride) < 1 then 1 else (fromInt stride)
+  in continueWith $ LVal $ concat $ direction $ sort $ strideList normStride list
+
+-- strideList l stride =
+--     if length l <= stride || stride <= 1 then [l] else take stride l:strideList (drop stride l) stride
+--
+-- llListSort _ [LVal list, IVal stride, IVal ascending] =
+--   let Just (IVal true) = findConstVal "TRUE" -- this will crash if true isn't defined...
+--       -- according to the documentation for this function
+--       -- ascending must EQUAL the constant TRUE, or sort
+--       -- will be descending (which is odd)
+--       direction = if ascending == true then id else reverse
+--   in continueWith $ LVal $
+--       concat (direction $ sort $ strideList list (fromInt stride))
 
 
 typeCodes :: RealFloat a => [(LSLType, LSLValue a)]
