@@ -8,11 +8,14 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 ## Changelog
 
-* **develop** (future 0.1.9.13)
-    * Work in progress...
+* **develop** (0.1.9.20250603)
+    * Update Eclipse with this branch !
+    * More functions and constants up to Simulator Release 2025-04-24 (e.g. llSetLinkGLTFOverrides()), thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
+ 
+* **0.1.9.20240410** 
     * Editor: brackets matching (color in Preferences)
     * Editor: outline always expanded
-    * Plugins version number use date (.qualifier) for easier update
+    * Plugins version number use date yearmonthday (.qualifier) for easier update
     * Added more functions and constants (llSetLinkSitFlags, llGetLinkSitFlags, PRIM_GLTF_..., DAMAGE_TYPE_...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
       
 * **0.1.9.12**
