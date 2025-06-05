@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts, NoMonomorphismRestriction #-}
 module Language.Lsl.Internal.Optimize(optimizeScript,OptimizerOption(..)) where
 
+import Control.Monad(liftM2,mplus)
 import Control.Monad.State hiding (State)
 import qualified Control.Monad.Identity as Id
 import qualified Control.Monad.State as State(State)
@@ -289,8 +290,19 @@ mkParmVars ss ves = mapM (mkParmVar ss) ves <&> concat
 mkParmVar ss (Ctx _ v@(Var nm _),arg) = do
     funFacts <- get <&> optFunFacts
     locals <- get <&> concat . optLocals
-    if isRelativelyPure locals funFacts arg &&
-       (staticComplexity arg < 2 || usageCount nm ss == 1) && not (nm `isModifiedIn` ss) && (simpleRef arg || nm `isUsedOnlyWholeIn` ss)
+    -- We can just reference the expression if and only if:
+    --  1. We have a relatively simple expression and it's pure or it is only
+    --     used once as then the purity is moot.
+    --  2. It is not modified (as the parameter isolates the modification in
+    --     scope)
+    --  3. It is either a simple reference ot it is only used whole.  (Not quite
+    --     sure why this is needed.)
+    if (
+        ((staticComplexity arg < 2) && (isRelativelyPure locals funFacts arg)) ||
+        usageCount nm ss == 1
+      ) &&
+      not (nm `isModifiedIn` ss) &&
+      (simpleRef arg || nm `isUsedOnlyWholeIn` ss)
         then do
             case arg of
                 (Ctx _ (Get (cnm,All))) -> addRename nm (ctxItem cnm)
@@ -558,10 +570,15 @@ renameRef (Ctx ctx nm, v) = do
     nm' <- inlinerRenamingFor nm
     return (Ctx ctx nm', v)
 
+-- Generally this seems to denote that the function does not GENERATE side
+-- effects.  It may however depend on external side effects.
 isRelativelyPure :: [String] -> M.Map String FunctionFacts -> Ctx Expr -> Bool
 isRelativelyPure locals ff = everything (&&) (True `mkQ` go)
     where
-        go (Get (cnm,_)) = nm `elem` locals || nm `elem` map constName allConstants where nm = ctxItem cnm
+        -- go (Get (cnm,_)) = nm `elem` locals || nm `elem` map constName allConstants where nm = ctxItem cnm
+        -- NOTE: This seems to break most optimizations and I cannot find a
+        -- reasonable reason for why reading a global would be problematic to
+        -- our relative "purity".
         go (Set _ _) = False
         go (IncBy _ _) = False
         go (DecBy _ _) = False
@@ -899,12 +916,64 @@ exprsToVals es = mapM exprToVal es
           exprToVal _ = Nothing
 
 simplifyE :: Expr -> SimpState Expr
+
+-- Useful Identities
+simplifyE (Add (Ctx _ i) (Ctx _ (IntLit 0))) = return i
+simplifyE (Add (Ctx _ (IntLit 0)) (Ctx _ j)) = return j
+simplifyE (Add (Ctx _ i) (Ctx _ (FloatLit 0))) = return i
+simplifyE (Add (Ctx _ (FloatLit 0)) (Ctx _ j)) = return j
+simplifyE (IncBy i (Ctx _ (IntLit 0))) = return (Get i)
+simplifyE (IncBy i (Ctx _ (FloatLit 0.0))) = return (Get i)
+simplifyE (Sub (Ctx _ i) (Ctx _ (IntLit 0))) = return i
+simplifyE (Sub (Ctx _ (IntLit 0)) (Ctx _ j)) = return j
+simplifyE (Sub (Ctx _ i) (Ctx _ (FloatLit 0))) = return i
+simplifyE (Sub (Ctx _ (FloatLit 0)) (Ctx _ j)) = return j
+simplifyE (DecBy i (Ctx _ (IntLit 0))) = return (Get i)
+simplifyE (DecBy i (Ctx _ (FloatLit 0.0))) = return (Get i)
+simplifyE (Mul (Ctx _ i) (Ctx _ (IntLit 1))) = return i
+simplifyE (Mul (Ctx _ (IntLit 1)) (Ctx _ j)) = return j
+simplifyE (Mul (Ctx _ i) (Ctx _ (FloatLit 1))) = return i
+simplifyE (Mul (Ctx _ (FloatLit 1)) (Ctx _ j)) = return j
+simplifyE (MulBy i (Ctx _ (IntLit 1))) = return (Get i)
+simplifyE (MulBy i (Ctx _ (FloatLit 1.0))) = return (Get i)
+simplifyE (MulBy i (Ctx c (IntLit 0))) = return (Set i (Ctx c (IntLit 0)))
+simplifyE (MulBy i (Ctx c (FloatLit 0.0))) = return (Set i (Ctx c (FloatLit 0.0)))
+simplifyE (Div (Ctx _ (IntLit 0)) _) = return (IntLit 0)
+simplifyE (Div (Ctx _ i) (Ctx _ (IntLit 1))) = return i
+simplifyE (Div (Ctx _ (FloatLit 0.0)) _) = return (FloatLit 0.0)
+simplifyE (Div (Ctx _ i) (Ctx _ (FloatLit 1.0))) = return i
+simplifyE (DivBy i (Ctx _ (IntLit 1))) = return (Get i)
+simplifyE (DivBy i (Ctx _ (FloatLit 1.0))) = return (Get i)
+simplifyE (Mod (Ctx _ (IntLit 0)) _) = return (IntLit 0)
+simplifyE (Mod _ (Ctx _ (IntLit 0))) = return (IntLit 0)
+simplifyE (ModBy i (Ctx c (IntLit 1))) = return (Set i (Ctx c (IntLit 0)))
+simplifyE (Xor (Ctx _ i) (Ctx _ (IntLit 0))) = return i
+simplifyE (Xor (Ctx _ (IntLit 0)) (Ctx _ j)) = return j
+simplifyE (BAnd _ (Ctx _ (IntLit 0))) = return (IntLit 0)
+simplifyE (BAnd (Ctx _ (IntLit 0)) _) = return (IntLit 0)
+simplifyE (BOr (Ctx _ i) (Ctx _ (IntLit 0))) = return i
+simplifyE (BOr (Ctx _ (IntLit 0)) (Ctx _ j)) = return j
+simplifyE (ShiftL (Ctx _ i) (Ctx _ (IntLit 0))) = return i
+simplifyE (ShiftR (Ctx _ i) (Ctx _ (IntLit 0))) = return i
+
+-- Vague Simulation of Associative Property for BOr which is limited to one step.
+-- NOTE: We should generally come up with a better solution to associative
+-- property of specific operations so they can arbitrarily reorder to group
+-- literals.  Mathematical ops should probably group both FloatLit and IntLit.
+--   BOr, BAnd, Xor, Add, Mul
+simplifyE (BOr (Ctx c (BOr i (Ctx _ (IntLit j)))) (Ctx _ (IntLit k))) = return (BOr i (Ctx c (IntLit (j .|. k))))
+simplifyE (BOr (Ctx c (BOr (Ctx _ (IntLit i)) j)) (Ctx _ (IntLit k))) = return (BOr j (Ctx c (IntLit (i .|. k))))
+simplifyE (BOr (Ctx _ (IntLit i)) (Ctx c (BOr j (Ctx _ (IntLit k))))) = return (BOr j (Ctx c (IntLit (i .|. k))))
+simplifyE (BOr (Ctx _ (IntLit i)) (Ctx c (BOr (Ctx _ (IntLit j)) k))) = return (BOr k (Ctx c (IntLit (i .|. j))))
+
+-- General Math
 simplifyE (Neg (Ctx _ (IntLit i))) = return (IntLit (-i))
 simplifyE (Not (Ctx _ (IntLit i))) = return (IntLit (fromBool (i == 0)))
 simplifyE (Inv (Ctx _ (IntLit i))) = return (IntLit (complement i))
 simplifyE (Add (Ctx _ (IntLit i)) (Ctx _ (IntLit j))) = return (IntLit (i + j))
 simplifyE (Mul (Ctx _ (IntLit i)) (Ctx _ (IntLit j))) = return (IntLit (i * j))
 simplifyE (Sub (Ctx _ (IntLit i)) (Ctx _ (IntLit j))) = return (IntLit (i - j))
+
 simplifyE (And (Ctx _ (IntLit i)) (Ctx _ (IntLit j))) = return (IntLit (fromBool (i /= 0 && j /= 0)))
 simplifyE (Or (Ctx _ (IntLit i)) (Ctx _ (IntLit j)))  = return (IntLit (fromBool (i /= 0 || j /= 0)))
 simplifyE (Lt (Ctx _ (IntLit i)) (Ctx _ (IntLit j)))  = return (IntLit (bb2int (<) i j))
@@ -932,11 +1001,13 @@ simplifyE (Ge (Ctx _ (FloatLit i)) (Ctx _ (FloatLit j)))  = return (IntLit (bb2i
 simplifyE (Le (Ctx _ (FloatLit i)) (Ctx _ (FloatLit j)))  = return (IntLit (bb2int (<=) i j))
 simplifyE (Equal (Ctx _ (FloatLit i)) (Ctx _ (FloatLit j)))  = return (IntLit (bb2int (==) i j))
 simplifyE (NotEqual (Ctx _ (FloatLit i)) (Ctx _ (FloatLit j)))  = return (IntLit (bb2int (==) i j))
-simplifyE e@(Div (Ctx _ (FloatLit i)) (Ctx _ (FloatLit j))) = return $ checkVal e (FVal ( i / j))
+simplifyE e@(Div (Ctx _ (FloatLit i)) (Ctx _ (FloatLit j))) | j /= 0 = return $ checkVal e (FVal ( i / j))
+                                                            | otherwise = return e
 simplifyE (Add (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return (FloatLit (fromIntegral i + j))
 simplifyE (Mul (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return (FloatLit (fromIntegral i * j))
 simplifyE (Sub (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return (FloatLit (fromIntegral i - j))
-simplifyE e@(Div (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return $ checkVal e (FVal ( fromIntegral i / j))
+simplifyE e@(Div (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) | j /= 0 = return $ checkVal e (FVal ( fromIntegral i / j))
+                                                          | otherwise = return e
 simplifyE (Equal (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return (IntLit (if fromIntegral i == j then 1 else 0))
 simplifyE (NotEqual (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return (IntLit (if fromIntegral i == j then 0 else 1))
 simplifyE (Lt (Ctx _ (IntLit i)) (Ctx _ (FloatLit j))) = return (IntLit (if fromIntegral i < j then 1 else 0))

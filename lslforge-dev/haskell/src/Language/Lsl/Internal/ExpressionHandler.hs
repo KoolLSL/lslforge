@@ -3,8 +3,8 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Language.Lsl.Internal.ExpressionHandler(validateExpression,evaluateExpression) where
 
-import Control.Monad.Except
-import Data.Bits
+import Control.Monad(unless,when)
+import Data.Bits((.|.),(.&.),complement,shiftL,shiftR,xor)
 import System.IO
 
 import Language.Lsl.Internal.Constants

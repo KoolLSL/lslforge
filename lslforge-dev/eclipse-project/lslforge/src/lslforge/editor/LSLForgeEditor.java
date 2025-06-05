@@ -91,7 +91,7 @@ public class LSLForgeEditor extends TextEditor implements SourceViewerConfigurat
      * Create an instance of the editor.
      */
     public LSLForgeEditor() {
-        super();
+    	super();
     }
     
     //Kool added 06/04/2024

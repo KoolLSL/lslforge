@@ -2,7 +2,7 @@
 <feature
       id="lslforge"
       label="LSLforge"
-      version="0.1.9.qualifier">
+      version="0.1.10.qualifier">
    <install-handler library="" handler=""/>
 
    <description>
@@ -111,6 +111,8 @@ THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS&apos;&apos; AND ANY EXPRESS OR I
 
    <plugin
          id="lslforge"
-         version="0.1.9.qualifier"/>
+         download-size="0"
+         install-size="0"
+         version="0.1.10.qualifier"/>
 
 </feature>

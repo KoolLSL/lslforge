@@ -29,7 +29,6 @@ module Data.LabelExtras(
     ) where
 
 import Prelude hiding(id,(.),lookup)
-import Control.Applicative(liftA2)
 import Control.Category
 import Control.Monad
 import Control.Monad.Except

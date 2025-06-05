@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: LSLForge
 Bundle-SymbolicName: lslforge; singleton:=true
-Bundle-Version: 0.1.9.qualifier
+Bundle-Version: 0.1.10.qualifier
 Bundle-ClassPath: lslforge.jar,
  antlr-3.5.2-complete-no-st3.jar,
  xstream-1.4.18.jar,
@@ -122,8 +122,8 @@ Export-Package: com.thoughtworks.xstream;
   uses:="org.eclipse.core.expressions,
    lslforge.debug,
    lslforge.util,
-   lslforge.sim,
    org.eclipse.jface.util,
+   lslforge.sim,
    org.eclipse.jface.resource,
    lslforge.editor.lsl,
    org.eclipse.swt.graphics,
@@ -135,10 +135,10 @@ Export-Package: com.thoughtworks.xstream;
    org.eclipse.ui.plugin,
    lslforge.editor,
    org.osgi.framework,
-   org.eclipse.ui,
    lslforge.cserver,
-   org.eclipse.core.runtime,
+   org.eclipse.ui,
    org.eclipse.osgi.util,
+   org.eclipse.core.runtime,
    lslforge.generated,
    org.eclipse.core.resources",
  lslforge.decorators;uses:="org.eclipse.jface.viewers",
@@ -171,8 +171,8 @@ Export-Package: com.thoughtworks.xstream;
    org.eclipse.jface.text.contentassist,
    lslforge.util,
    org.eclipse.jface.util,
-   org.eclipse.jface.text,
    org.eclipse.jface.preference,
+   org.eclipse.jface.text,
    org.eclipse.jface.text.rules",
  lslforge.generated;uses:="com.thoughtworks.xstream",
  lslforge.language_metadata,
@@ -188,8 +188,8 @@ Export-Package: com.thoughtworks.xstream;
   uses:="org.eclipse.core.runtime,
    lslforge.gentree,
    lslforge.generated,
-   org.eclipse.core.resources,
    com.thoughtworks.xstream,
+   org.eclipse.core.resources,
    lslforge,
    lslforge.debug,
    org.eclipse.debug.core",
@@ -231,9 +231,10 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.debug.ui,
  org.eclipse.ui.ide,
  org.eclipse.help,
- org.eclipse.text
+ org.eclipse.text,
+ org.glassfish.hk2.osgi-resource-locator;bundle-version="[2.0.0,3.0.0)"
 Bundle-ActivationPolicy: lazy
 Import-Package: com.ibm.icu.text,
  org.eclipse.ui.views.contentoutline
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Automatic-Module-Name: lslforge

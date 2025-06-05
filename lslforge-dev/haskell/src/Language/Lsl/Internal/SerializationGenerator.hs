@@ -12,7 +12,7 @@ import Language.Lsl.Internal.DOMCombinators
 import Data.Generics
 import Data.Int
 import Data.List
-import Data.Functor ((<&>))
+import Data.Functor((<&>))
 
 class JavaRep a where
     representative :: a
@@ -96,15 +96,6 @@ instance {-# OVERLAPPABLE #-} JavaRep a => JavaRep [a] where
     elemDescriptor = el (xmlDefaultTag (representative :: [a])) id (many elemDescriptor)
     contentFinder tag = mustHaveElem $ subElemDescriptor tag
 
--- instance JavaRep a => JavaRep (Maybe a) where
---     representative = Just (representative :: a)
---     xmlSerialize t Nothing = id
---     xmlSerialize t (Just v) = xmlSerialize t v
---     xmlDefaultTag x = xmlDefaultTag (representative :: a)
---     subElemDescriptor tag = \ p e -> subElemDescriptor tag p e >>= return . Just
---     elemDescriptor = \ p e -> elemDescriptor p e >>= return . Just
---     contentFinder tag = (canHaveElem $  (\ p e -> subElemDescriptor tag p e))
-
 deriveJavaRepTups l = mapM deriveJavaRepTup l <&> concat
 
 deriveJavaRepTup n = do
@@ -180,8 +171,8 @@ deriveJavaRep nm = if nm == ''[] then return [] else
             sequence [instanceD ctx typ [representativeD,xmlSerializeD,dec1,
                           subElemDescriptorD,elemDescriptorD,contentFinderD],
                       valD (varP (mkName $ "jrep'" ++ nameBase tnm)) (normalB representationE) []]
-            where tyVarName (PlainTV n) = n
-                  tyVarName (KindedTV n _) = n
+            where tyVarName (PlainTV n _) = n
+                  tyVarName (KindedTV n _ _) = n
                   names = map tyVarName vs
                   ctx = mapM (appT javaRepCon . varT) names
                   typ = appT javaRepCon $ foldl appT (conT tnm) (map varT names)
@@ -363,7 +354,6 @@ saveReps pkg codeInfo = do
 
 
 concatNM = '(++)
-concatV = varE concatNM
 
 specialNames = [(''[],"LinkedList"),
                 (''(,),"Tuple2"),
@@ -407,6 +397,14 @@ repT dict mult (TupleT x) = "Tuple" ++ show x ++ "<"
 repT dict mult (AppT x y) = repT dict (mult + 1) x ++ repT dict 0 y ++ if mult == 0 then ">" else ","
 repT _ _ t = error ("can't repT: " ++ show t)
 
+-- Find the first value using a function to check the key-value pair on an
+-- associative list.
+findAssocValue :: Eq a => ((a, b) -> Bool) -> [(a, b)] -> Maybe b
+findAssocValue _f []                =  Nothing
+findAssocValue f ((x, y) : xys)
+        | f (x, y)                 =  Just y
+        | otherwise                =  findAssocValue f xys
+
 -- template haskell from a type and it's args
 deSyn :: [Type] -> Type -> Q Type
 deSyn targs t@(ConT nm) = reify nm >>= \case
@@ -416,7 +414,8 @@ deSyn targs t@(ConT nm) = reify nm >>= \case
      TyConI (TySynD _ params t1) -> return (foldl AppT (subst t1) targs')
          where targs' = drop (length params) targs
                substs = zip params targs
-               subst t@(VarT nm) = fromMaybe t (lookup (PlainTV nm) substs)
+               --subst t@(VarT nm) = fromMaybe t (lookup (PlainTV nm) substs)
+               subst t@(VarT nm) = fromMaybe t (findAssocValue (\((PlainTV k _), v) -> k == nm) substs)
                subst (AppT x y)  = (AppT (subst x) (subst y))
                subst t           = t
      other -> error ("can't deSyn for ConT: " ++ show (ppr other))

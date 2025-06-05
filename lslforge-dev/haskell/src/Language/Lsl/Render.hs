@@ -2,6 +2,8 @@
 module Language.Lsl.Render(renderCompiledScript,renderStatements,renderCtxStatement,renderStatement) where
 
 import Data.List(foldl',intersperse)
+--import Data.Maybe(fromJust)
+--import Data.Text(strip,unpack)
 import Language.Lsl.Syntax(Expr(..),Func(..),FuncDec(..),Global(..),Handler(..),State(..),Statement(..),
                   Ctx(..),Var(..),LSLType(..),Component(..),ctxItems,CompiledLSLScript(..),
                   SourceContext(..))
@@ -55,9 +57,11 @@ renderState (Ctx ssc (State (Ctx _ name) handlers)) =
 renderHandlers = renderSequence renderHandler
 
 renderHandler (Ctx _ (Handler (Ctx sc name) vars stmts)) = renderPreText1 (renderIndent 0) sc . renderHandler' name vars stmts
+--renderHandler (Ctx _ (Handler (Ctx sc name) vars stmts)) = renderPreTextClean sc . renderHandler' name vars stmts
+--renderHandler (Ctx _ (Handler (Ctx sc name) vars stmts)) = (renderIndent 0) . renderHandler' name vars stmts
 
 renderHandler' name vars stmts =
-    renderString name . renderChar '(' . renderVarList (ctxItems vars) . renderString ") {\n" .
+    renderIndent 0 . renderString name . renderString " (" . renderVarList (ctxItems vars) . renderString ")\n" . renderIndent 0 . renderString "{\n" .
         renderStatements 1 stmts . renderIndent 0 . renderString "}\n"
 
 renderChar = showChar
@@ -237,3 +241,7 @@ renderPreText = maybe (renderString "\n") (renderString . srcPreText)
 
 renderPreText1 :: (String -> String) -> Maybe SourceContext -> String -> String
 renderPreText1 f = maybe (renderString "\n" . f) (renderString . srcPreText)
+--renderPreTextClean :: Maybe (SourceContext { srcPreText = spt }) -> String -> String
+--renderPreTextClean = renderString (maybe ("\n") unpack $ strip srcPreText)
+--renderPreTextClean :: Maybe SourceContext -> String -> String
+--renderPreTextClean = maybe (renderString "\n") (renderString (unpack $ strip $ fromJust sc srcPreText))

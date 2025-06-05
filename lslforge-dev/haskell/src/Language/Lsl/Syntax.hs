@@ -73,6 +73,7 @@ import Data.List(find,sort,sortBy,nub,nubBy,deleteFirstsBy)
 import qualified Data.Map as M
 import Data.Maybe(isJust,isNothing,mapMaybe, fromMaybe, catMaybes)
 import Language.Lsl.Internal.Util(LSLInteger,ctx,findM,lookupM,filtMap)
+import Control.Monad(ap,mplus,unless,when)
 import Control.Monad.Except(MonadError(..))
 import Control.Monad.Outdated.Error(Error(..))
 import qualified Control.Monad.State as S(State)

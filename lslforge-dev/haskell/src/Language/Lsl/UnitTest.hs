@@ -40,8 +40,8 @@ argMatch Nothing _                       = Just 0
 argsMatch expectArgs args = foldl (liftM2 (+)) (Just 0) $ zipWith argMatch expectArgs args
 
 lslValuesMatch (FVal a) (FVal b) = a == b ||
-    if a == 0.0 then b < 0.000001
-    else if b == 0.0 then a < 0.000001
+    if a == 0.0 then (abs b) < 0.000001
+    else if b == 0.0 then (abs a) < 0.000001
     else abs ((b - a) / a) <  0.000001
 lslValuesMatch x y = x == y
 

@@ -2,15 +2,15 @@
 <feature
       id="lslforge_part_linux_x86"
       label="lslforge_part_linux_x86"
-      version="0.1.9.qualifier"
+      version="0.1.10.qualifier"
       os="linux">
 
    <requires>
-      <import plugin="lslforge" version="0.1.9.0" match="greaterOrEqual"/>
+      <import plugin="lslforge" version="0.1.10.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
          id="lslforge_linux_x86"
-         version="0.1.9.qualifier"/>
+         version="0.1.10.qualifier"/>
 
 </feature>

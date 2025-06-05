@@ -8,6 +8,16 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
 
 ## Changelog
 
+* **0.1.10.20250605**
+    * Fixed issue with debugger where it couldn't properly locate the source to debug in some instances.
+    * Fixed an issue with llListSort where the handling for strided lists would cause unstrided lists to be jumbled.
+    * Fixed an issue with optimization of strings where un-encodable characters could make for invalid code (also fixes "\t" != llChar(9).)
+    * Fixed optimization to work in more cases that were being precluded.
+    * Updated Haskell and Cabal to be closer to modern.
+    * Added support for simulating JSON functions (llJson2List, llJsonGetValue, llJsonSetValue, llJsonValueType, llList2Json)
+    * Added support for simulating llReplaceSubString.
+    * Compiled only for win32 (not mac, linux)
+
 * **develop** (0.1.9.20250603)
     * Update Eclipse with this branch !
     * More functions and constants up to Simulator Release 2025-04-24 (e.g. llSetLinkGLTFOverrides()), thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
@@ -17,7 +27,7 @@ The aim is to integrate the latest LSL definitions for functions, constants and 
     * Editor: outline always expanded
     * Plugins version number use date yearmonthday (.qualifier) for easier update
     * Added more functions and constants (llSetLinkSitFlags, llGetLinkSitFlags, PRIM_GLTF_..., DAMAGE_TYPE_...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
-      
+
 * **0.1.9.12**
     * Added functions and constants till Simulator Release 2024-02-21.7995320426 (llGetNotecardLineSync, llComputeHash, llRezObjectWithParams...) thanks to [@ChloeConstantine](https://github.com/ChloeConstantine)
     * Renamed some folders (lslforge to lslforge-dev, lslforge/eclipse to lslforge-dev/eclipse-project)

@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Language.Lsl.Internal.CompilationServer where
 
-import Control.Monad.Except
+import Control.Monad(when)
 
 import Data.Either
 import Data.Generics
@@ -105,27 +105,28 @@ data Tst = Tst (Double,Int,Char)
 data Tst1 = Tst1 (Tup3 Double Int Char)
 
 $(deriveJavaRep ''TextLocation)
+$(deriveJavaRep ''Pragma)
+$(deriveJavaRep ''SourceContext)
+$(deriveJavaRep ''Component)
+$(deriveJavaRep ''Ctx)
 $(deriveJavaRep ''LSLType)
+$(deriveJavaRep ''Var)
+$(deriveJavaRep ''Expr)
+$(deriveJavaRep ''FuncDec)
+$(deriveJavaRep ''Statement)
+$(deriveJavaRep ''Func)
+$(deriveJavaRep ''GlobDef)
+$(deriveJavaRep ''Handler)
+$(deriveJavaRep ''State)
+$(deriveJavaRep ''CodeElement)
+
 $(deriveJavaRep ''EPKind)
 $(deriveJavaRep ''EPSummary)
 $(deriveJavaRep ''GlobalSummary)
-$(deriveJavaRep ''CodeElement)
 $(deriveJavaRep ''CompilationCommand)
 $(deriveJavaRep ''ErrInfo)
 $(deriveJavaRep ''CompilationStatus)
-$(deriveJavaRep ''State)
-$(deriveJavaRep ''GlobDef)
-$(deriveJavaRep ''Handler)
-$(deriveJavaRep ''Ctx)
-$(deriveJavaRep ''Expr)
-$(deriveJavaRep ''SourceContext)
-$(deriveJavaRep ''Pragma)
 $(deriveJavaRep ''LSLScript)
-$(deriveJavaRep ''Statement)
-$(deriveJavaRep ''Component)
-$(deriveJavaRep ''Func)
-$(deriveJavaRep ''FuncDec)
-$(deriveJavaRep ''Var)
 $(deriveJavaRep ''LModule)
 $(deriveJavaRep ''CompilationResponse)
 $(deriveJavaRep ''Tup3)

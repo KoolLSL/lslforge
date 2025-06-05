@@ -50,6 +50,7 @@ module Language.Lsl.Internal.InternalLLFuncs(
     llBase64ToInteger,
     llBase64ToString,
     llStringToBase64,
+    llReplaceSubString,
     llStringTrim,
     llXorBase64Strings,
     llXorBase64StringsCorrect,
@@ -90,25 +91,31 @@ module Language.Lsl.Internal.InternalLLFuncs(
     llVecMag,
     llVecDist,
     llVecNorm,
+    -- JSON functions
+    llJson2List,
+    llJsonGetValue,
+    llJsonSetValue,
+    llJsonValueType,
+    llList2Json,
     -- List functions
-    llGetListLength,
-    llList2List,
+    llCSV2List,
     llDeleteSubList,
     llDumpList2String,
+    llGetListEntryType,
+    llGetListLength,
     llListFindList,
     llListInsertList,
     llListReplaceList,
-    llList2ListStrided,
     llListSort,
-    llGetListEntryType,
+    llList2CSV,
     llList2Float,
     llList2Integer,
     llList2Key,
+    llList2List,
+    llList2ListStrided,
     llList2Rot,
     llList2String,
     llList2Vector,
-    llList2CSV,
-    llCSV2List,
     internalLLFuncs,
     internalLLFuncNames
     ) where
@@ -135,15 +142,31 @@ import Language.Lsl.Internal.Evaluation(EvalResult(..))
 import Language.Lsl.Internal.Constants(findConstVal)
 import Language.Lsl.Internal.Key(LSLKey(..))
 import Language.Lsl.Internal.SHA1(hashStoHex)
-import Data.List(elemIndex,find,foldl',isPrefixOf,sort, intercalate)
+import Data.List(elemIndex,find,foldl',isPrefixOf,sort,intercalate)
+import Data.List.Split(chunksOf)
 import Data.Char(toLower,toUpper,chr,ord,isHexDigit,digitToInt,intToDigit)
 import Data.Bits((.|.),(.&.),shiftL,shiftR,xor)
+import Data.Foldable(toList)
+import Data.Vector((!),(!?))
+import qualified Data.Vector as DV
+
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Digest.Pure.MD5 as MD5
 import qualified Data.ByteString.UTF8 as UTF8
+import qualified Data.Text.Lazy             as TL
+import qualified Data.Text.Lazy.Encoding    as TL
+
+import Data.Scientific(isInteger,toBoundedInteger,toRealFloat)
+import qualified Data.Text as DT
+import qualified Data.Aeson as DA
+import qualified Data.Aeson.Types as DAT
+import qualified Data.Aeson.Key as DAK
+import qualified Data.Aeson.KeyMap as DAK
+
 import Codec.Binary.UTF8.String(encodeString,decodeString)
-import Data.Maybe (fromMaybe)
+import Data.Maybe(fromJust,fromMaybe)
+import Text.Printf(printf)
 
 internalLLFuncNames :: [String]
 internalLLFuncNames = map fst (internalLLFuncs :: (Read a, RealFloat a, Show a) => [(String, a -> [LSLValue a] -> Maybe (EvalResult,LSLValue a))])
@@ -177,9 +200,14 @@ internalLLFuncs = [
     ("llHash",llHash),
     ("llInsertString",llInsertString),
     ("llIntegerToBase64",llIntegerToBase64),
+    ("llJson2List",llJson2List),
+    ("llJsonGetValue",llJsonGetValue),
+    ("llJsonSetValue",llJsonSetValue),
+    ("llJsonValueType",llJsonValueType),
     ("llList2CSV",llList2CSV),
     ("llList2Float",llList2Float),
     ("llList2Integer",llList2Integer),
+    ("llList2Json",llList2Json),
     ("llList2Key",llList2Key),
     ("llList2List",llList2List),
     ("llList2ListStrided",llList2ListStrided),
@@ -212,6 +240,7 @@ internalLLFuncs = [
     ("llSqrt",llSqrt),
     ("llStringLength",llStringLength),
     ("llStringToBase64",llStringToBase64),
+    ("llReplaceSubString", llReplaceSubString),
     ("llStringTrim", llStringTrim),
     ("llSubStringIndex",llSubStringIndex),
     ("llTan",llTan),
@@ -226,6 +255,8 @@ internalLLFuncs = [
 
 continueWith x = return (EvalIncomplete,x)
 
+floatToStr f = printf "%.6f" (realToFrac f :: Double)
+
 -- String Functions
 llStringLength _ [SVal s] = continueWith $ iVal (length s)
 llGetSubString _ [SVal source, IVal start, IVal end] = continueWith $ SVal (subList source (fromInt start) (fromInt end))
@@ -234,6 +265,24 @@ llInsertString _ [SVal dst, IVal pos, SVal src] =
    -- TODO: wiki says this function does not support negative indices...
    -- how does it deal with out of range indices?
    let (x,y) = splitAt (fromInt pos) dst in continueWith $ SVal $ x ++ src ++ y
+
+
+llReplaceSubString _ [SVal source, SVal pattern, SVal repl_str, IVal count] =
+    let dt_source = DT.pack source
+        dt_pattern = DT.pack pattern
+        dt_repl_str = DT.pack repl_str
+        i_count = fromIntegral count
+        elems = DT.splitOn dt_pattern dt_source
+    in continueWith $ SVal $ (case i_count of
+        c | c < 0 -> (
+                     let split_pt = maximum [0, (length elems) + i_count - 1]
+                         (part1, part2) = splitAt split_pt elems
+                     in DT.unpack $ DT.intercalate dt_pattern (part1 ++ [DT.intercalate dt_repl_str part2]))
+          | c == 0 -> DT.unpack $ DT.replace dt_pattern dt_repl_str dt_source
+          | c > 0 -> (
+                     let split_pt = i_count + 1
+                         (part1, part2) = splitAt split_pt elems
+                     in DT.unpack $ DT.intercalate dt_pattern ((DT.intercalate dt_repl_str part1) : part2)))
 
 
 separate :: Eq a => [a] -> [[a]] -> [[a]] -> [a] -> Bool -> [[a]]
@@ -449,6 +498,258 @@ llVecNorm _ [v@(VVal x y z)] =
         continueWith $ if mag2 == 0.0 then VVal 0.0 0.0 0.0
                        else let mag = sqrt mag2 in
                            VVal (x/mag) (y/mag) (z/mag)
+
+-- JSON Functions
+
+stringToLBS :: String -> L.ByteString
+stringToLBS s = TL.encodeUtf8 $ TL.pack $ s
+
+bsToString :: L.ByteString -> String
+bsToString bs = TL.unpack $ TL.decodeUtf8 $ bs
+
+findConstValStr s = lslValString $ fromJust $ findConstVal s
+findConstValInt s = (case (fromJust $ findConstVal s) of
+  IVal i -> i)
+
+-- NOTE: These have 6 decimal places and spaces unlike toSVal.
+lslListValToJsonString (VVal x y z) = "\"<" ++ floatToStr x ++ ", " ++
+    floatToStr y ++ ", " ++ floatToStr z ++ ">\""
+lslListValToJsonString (RVal x y z s) = "\"<" ++ floatToStr x ++ ", " ++
+    floatToStr y ++ ", " ++ floatToStr z ++ ", " ++ floatToStr s ++ ">\""
+
+-- NOTE: If string is "[...]", "{...}", "true", or "false", don't quote it,
+-- this allows us to "embed" JSON results in the list and chain complex
+-- structures.
+lslListValToJsonString (SVal s) = (case SVal s of
+    sv | Just sv == findConstVal "JSON_TRUE"    -> "true"
+       | Just sv == findConstVal "JSON_FALSE"   -> "false"
+       | ((head s) == '[') && ((last s) == ']') -> s
+       | ((head s) == '{') && ((last s) == '}') -> s
+       | s == "true"                            -> s
+       | s == "false"                           -> s
+       | otherwise                              -> show s)
+lslListValToJsonString (KVal k) = unLslKey k
+lslListValToJsonString (IVal i) = show i
+lslListValToJsonString (FVal f) = floatToStr f
+
+lslListToJsonArray (LVal l) = "[" ++
+    (intercalate "," $ map lslListValToJsonString l) ++ "]"
+
+lslListToJsonObject (LVal l) =
+    if keysvalid l
+        then "{" ++ (intercalate "," $ map kvpair (chunksOf 2 l)) ++ "}"
+        else findConstValStr "JSON_INVALID"
+    where
+        keysvalid x = (case x of
+                (k:_:xs) -> (validkey k) && (keysvalid xs)
+                [_] -> False
+                [] -> True
+            ) where
+                validkey x = (case x of
+                    SVal s -> True
+                    KVal k -> True
+                    _ -> False)
+        kvpair [k,v] = (key2s k) ++ ":" ++ (lslListValToJsonString v)
+            where
+                key2s (KVal k) = unLslKey k
+                key2s (SVal s) = show s
+
+llList2Json _ [json_type, values] =
+    continueWith $ SVal $ (case json_type of
+        jt | Just jt == findConstVal "JSON_ARRAY"  -> lslListToJsonArray values
+           | Just jt == findConstVal "JSON_OBJECT" -> lslListToJsonObject values
+           | otherwise                             -> findConstValStr "JSON_INVALID")
+
+jsonAst2Lsl :: (RealFloat a) => DAT.Value -> LSLValue a
+jsonAst2Lsl v = (case v of
+    DAT.Object o -> SVal $ bsToString $ DA.encode v
+    DAT.Array a -> SVal $ bsToString $ DA.encode v
+    DAT.Bool b -> if b
+      then fromJust $ findConstVal "JSON_TRUE"
+      else fromJust $ findConstVal "JSON_FALSE"
+    DAT.String s -> SVal $ DT.unpack s
+    DAT.Number n -> if isInteger n
+      then (case toBoundedInteger n of
+        Just i -> IVal i
+        Nothing -> FVal $ toRealFloat n)
+      else FVal $ toRealFloat n
+    x | x == DAT.emptyArray -> fromJust $ findConstVal "JSON_NULL"
+    )
+
+llJson2List _ [SVal json] =
+  let raw = DA.decode (stringToLBS json) :: Maybe DAT.Value
+  in continueWith $ LVal (case raw of
+    Just (DAT.Object o) -> concat $ map elem2lsl $ DAK.toAscList o
+    Just (DAT.Array arr) -> map jsonAst2Lsl $ toList arr
+    Just i -> [jsonAst2Lsl i]
+    Nothing -> [])
+  where
+    elem2lsl (k,v) = [SVal $ DAK.toString k, jsonAst2Lsl v]
+
+jsonAst2Type :: (RealFloat a) => DAT.Value -> LSLValue a
+jsonAst2Type v = (case v of
+    DAT.Object o -> fromJust $ findConstVal "JSON_OBJECT"
+    DAT.Array a -> fromJust $ findConstVal "JSON_ARRAY"
+    DAT.Bool b -> if b
+      then fromJust $ findConstVal "JSON_TRUE"
+      else fromJust $ findConstVal "JSON_FALSE"
+    DAT.String s -> fromJust $ findConstVal "JSON_STRING"
+    DAT.Number n -> fromJust $ findConstVal "JSON_NUMBER"
+    x | x == DAT.emptyArray -> fromJust $ findConstVal "JSON_NULL"
+    )
+
+jsonSpecDescent :: (RealFloat a) => DAT.Value -> [LSLValue a] -> DAT.Value
+jsonSpecDescent v spec = (case (v, spec) of
+    (DAT.Array a, (IVal i:xs)) ->
+        let iv = fromIntegral i
+        in if ((iv < 0) || (iv >= (DV.length a)))
+            then DAT.Null
+            else jsonSpecDescent (a ! iv) xs
+    (DAT.Object o, (SVal s:xs)) ->
+        let nv = DAK.lookup (DAK.fromString s) o
+        in (case nv of
+            Just sv -> jsonSpecDescent sv xs
+            Nothing -> DAT.Null)
+    (_, []) -> v
+    (_, _) -> DAT.Null
+    )
+
+-- Important test cases:
+-- llOwnerSay("del 2: " + llJsonSetValue("[1,2,3]", [2], JSON_DELETE)); // [1,2]
+-- llOwnerSay("set 3->4: " + llJsonSetValue("[1,2,3]", [3], "4")); // [1,2,3,4]
+-- llOwnerSay("del 3: " + llJsonSetValue("[1,2,3]", [3], JSON_DELETE)); // JSON_INVALID
+-- llOwnerSay("add c:7: " + llJsonSetValue("{\"a\":5,\"b\":7}", ["c"], "7")); // {"a":5,"b":7,"c":7}
+-- llOwnerSay("del c: " + llJsonSetValue("{\"a\":5,\"b\":7}", ["c"], JSON_DELETE)); // JSON_INVALID
+-- llOwnerSay("del b: " + llJsonSetValue("{\"a\":5,\"b\":7}", ["b"], JSON_DELETE)); // {"a":5}
+-- llOwnerSay("append 7: " + llJsonSetValue("{\"a\":5,\"b\":7}", [JSON_APPEND], "7")); // [7]
+-- llOwnerSay("dbl append: " + llJsonSetValue("{\"a\":5,\"b\":7}", [JSON_APPEND, JSON_APPEND], "7")); // [[7]]
+-- llOwnerSay("dbl append del: " + llJsonSetValue("true", [JSON_APPEND, JSON_APPEND], JSON_DELETE)); // JSON_INVALID
+
+-- APPEND = append to array or replace element with array and put value in it,
+--          can have multiple at end of spec.  Can add element to end of an
+--          array by setting offset [len] (<0 and >len are Invalid).
+--          Can't DELETE element beyond offset [len] (Invalid)
+-- APPEND + DELETE = invalid
+-- DELETE-ing non-existant elements fails (Invalid)
+
+jsonModBySpec :: (RealFloat a) => DAT.Value -> [LSLValue a] -> String -> LSLValue a
+jsonModBySpec json spec value =
+    (case (spec, value) of
+        ([], v) | v == findConstValStr "JSON_DELETE"  -> SVal ""
+        otherwise -> (case (traverse json spec value) of
+            Just rval -> SVal $ bsToString $ DA.encode rval
+            Nothing -> fromJust $ findConstVal "JSON_INVALID")
+    ) where
+        traverse :: (RealFloat a) => DAT.Value -> [LSLValue a] -> String -> Maybe DAT.Value
+        traverse json spec value =
+            -- Handle the JSON_APPEND before the main case to allow for multiple
+            -- layers of JSON_APPEND by clobbering the current value with an empty
+            -- array.
+            let mjson = (case (json, spec) of
+                            (DAT.Array _, (IVal _:_)) -> json
+                            (_, (IVal i:_)) | i == findConstValInt "JSON_APPEND" ->
+                                    DAT.Array DV.empty
+                            otherwise -> json)
+
+            -- Handle all the general cases and if we fall outside of those, return a
+            -- NULL.
+            in (case (mjson, spec) of
+                -- Handle "normal" array append.
+                (DAT.Array a, (IVal i:xs)) | i == findConstValInt "JSON_APPEND" ->
+                    (case (traverse DAT.Null xs value) of
+                        Just subv -> Just $ DAT.Array $ DV.snoc a subv
+                        Nothing -> Nothing)
+
+                -- Handle array modification.
+                (DAT.Array a, (IVal i:xs)) ->
+                    let iv = fromIntegral i
+                    in if (xs == []) && (value == findConstValStr "JSON_DELETE")
+
+                        -- Delete the element iff it exists.
+                        then if ((iv < 0) || (iv >= (DV.length a)))
+                            then Nothing
+                            else Just $ DAT.Array $ DV.concat [(DV.take iv a), (DV.drop (iv + 1) a)]
+
+                        -- Not JSON_DELETE
+                        else
+                            let liv = a !? iv
+                                lv = (case liv of
+                                    Nothing | iv == (DV.length a) -> Just DAT.Null
+                                    otherwise -> liv)
+                            in (case lv of
+                                Nothing -> Nothing
+                                Just _ -> (case (liv, (traverse (fromJust lv) xs value)) of
+                                    (Nothing, Just subv) -> Just $ DAT.Array $ DV.snoc a subv -- last element append
+                                    (Just _, Just subv) -> Just $ DAT.Array $ DV.unsafeUpd a [(iv, subv)]
+                                    otherwise -> Nothing)
+                                )
+
+                -- Handle object modification.
+                (DAT.Object o, (SVal s:xs)) ->
+
+                    -- Handle key deletion
+                    let skey = DAK.fromString s
+                        lv = DAK.lookup skey o
+                    in if (xs == []) && (value == findConstValStr "JSON_DELETE")
+                        then (case lv of
+                            Just _ -> Just $ DAT.Object $ DAK.delete skey o
+                            otherwise -> Nothing)
+                        else (case (traverse (fromMaybe DAT.Null lv) xs value) of
+                            Just subv -> Just $ DAT.Object $ DAK.insert skey subv o
+                            otherwise -> Nothing)
+
+                -- Last element, delete should be handld by the preceeding layer.
+                (_, []) -> if value == findConstValStr "JSON_DELETE"
+                    then Nothing
+                    else DA.decode (stringToLBS value) :: Maybe DAT.Value
+
+                otherwise -> Nothing
+                )
+
+
+llJsonValueType _ [SVal json, LVal spec] =
+  let raw = DA.decode (stringToLBS json) :: Maybe DAT.Value
+  in continueWith $ (case raw of
+    Just dv ->
+        let val = jsonSpecDescent dv spec
+        in if (val == DAT.Null)
+            then fromJust $ findConstVal "JSON_INVALID"
+            else jsonAst2Type val
+    Nothing -> fromJust $ findConstVal "JSON_INVALID")
+
+
+jsonAst2Str :: DAT.Value -> String
+jsonAst2Str v = (case v of
+    DAT.Object o -> bsToString $ DA.encode v
+    DAT.Array a -> bsToString $ DA.encode v
+    DAT.Bool b -> if b
+      then findConstValStr "JSON_TRUE"
+      else findConstValStr "JSON_FALSE"
+    DAT.String s -> DT.unpack s          -- Surprisingly LSL doesn't quote this
+    DAT.Number n -> if isInteger n
+      then (case toBoundedInteger n of
+        Just i -> show (i :: LSLInteger)
+        Nothing -> show n)               -- Surprisingly not %.6f
+      else show n                        -- Surprisingly not %.6f
+    x | x == DAT.emptyArray -> "[]"
+    )
+
+llJsonGetValue _ [SVal json, LVal spec] =
+  let raw = DA.decode (stringToLBS json) :: Maybe DAT.Value
+  in continueWith $ (case raw of
+    Just dv ->
+        let val = jsonSpecDescent dv spec
+        in if (val == DAT.Null)
+            then fromJust $ findConstVal "JSON_INVALID"
+            else SVal $ jsonAst2Str val
+    Nothing -> fromJust $ findConstVal "JSON_INVALID")
+
+llJsonSetValue _ [SVal json, LVal spec, SVal value] =
+  let raw = DA.decode (stringToLBS json) :: Maybe DAT.Value
+  in continueWith $ (case (raw) of
+    Just rjson -> jsonModBySpec rjson spec value
+    Nothing -> fromJust $ findConstVal "JSON_INVALID")
+
 
 -- List Functions
 
