@@ -1,3 +1,9 @@
+> [!WARNING]
+> LSLForge for Eclipse is no longer maintained here.
+> 
+> **Switch to our new [IntelliJ LSL Plugin](https://github.com/KoolLSL/intellij-lsl) to take advantage of a more modern IDE and updated LSL definitions.**
+
+
 # LSLForge
 
 LSLForge is a plugin for the Eclipse IDE. The plugin allows editing, compiling and, optionaly, executing and unit testing offline your Second Life® Linden Scripting Language (LSL) code.
