@@ -1,5 +1,5 @@
 > [!WARNING]
-> LSLForge for Eclipse is no longer maintained here.
+> LSLForge for Eclipse is no longer maintained here as of September 18, 2026.
 > 
 > **Switch to our new [IntelliJ LSL Plugin](https://github.com/KoolLSL/intellij-lsl) to take advantage of a more modern IDE and updated LSL definitions.**
 
